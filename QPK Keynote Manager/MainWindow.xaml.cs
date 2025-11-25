@@ -23,7 +23,7 @@ namespace QPK_Keynote_Manager
         public ObservableCollection<ReplaceResult> ReplaceResults { get; }
             = new ObservableCollection<ReplaceResult>();
 
-        // Bound to the Find / Replace TextBoxes (optional, since we read from TextBoxes directly)
+        // Optional backing for bindings (we still read directly from TextBoxes)
         public string FindText { get; set; }
         public string ReplaceText { get; set; }
 
@@ -33,9 +33,8 @@ namespace QPK_Keynote_Manager
             _doc = uidoc.Document;
 
             InitializeComponent();
-            DataContext = this;   // enables bindings to FindText / ReplaceText / ReplaceResults
+            DataContext = this;
 
-            // Create ExternalEvents for modeless operations
             _replaceAllEvent = ExternalEvent.Create(new ReplaceAllHandler(this));
             _replaceSelectedEvent = ExternalEvent.Create(new ReplaceSelectedHandler(this));
         }
@@ -44,11 +43,27 @@ namespace QPK_Keynote_Manager
 
         public class ReplaceResult
         {
-            public ElementId TypeId { get; set; }      // For applying changes
-            public string StringFound { get; set; }    // Original type comment
-            public string StringReplaced { get; set; } // New type comment
-            public string Sheet { get; set; }          // Sheet name/number (if on sheet)
-            public string ScheduleName { get; set; }   // Schedule that produced this row
+            public ElementId TypeId { get; set; }
+
+            // Full comments used for actual Revit parameter updates
+            public string FullOldComment { get; set; }
+            public string FullNewComment { get; set; }
+
+            // Context around the first match in the comment
+            public string FoundPrefix { get; set; }   // words before target
+            public string FoundWord { get; set; }     // target word (e.g. "hello")
+            public string FoundSuffix { get; set; }   // words after target
+
+            public string ReplPrefix { get; set; }
+            public string ReplWord { get; set; }      // replacement word (e.g. "this")
+            public string ReplSuffix { get; set; }
+
+            public string Sheet { get; set; }
+            public string ScheduleName { get; set; }
+
+            // Handy combined strings (not used for coloring, but available)
+            public string StringFound => string.Concat(FoundPrefix, FoundWord, FoundSuffix);
+            public string StringReplaced => string.Concat(ReplPrefix, ReplWord, ReplSuffix);
         }
 
         #endregion
@@ -59,7 +74,6 @@ namespace QPK_Keynote_Manager
         {
             if (tElem == null) return string.Empty;
 
-            // Try built-in "Type Comments"
             Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
             if (p != null)
             {
@@ -67,7 +81,6 @@ namespace QPK_Keynote_Manager
                 if (!string.IsNullOrEmpty(s)) return s;
             }
 
-            // Fallback common names
             string[] names = { "Type Comments", "Comments", "Comment", "COMMENT" };
             foreach (string nm in names)
             {
@@ -86,12 +99,10 @@ namespace QPK_Keynote_Manager
         {
             if (tElem == null) return false;
 
-            // Prefer built-in
             Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
             if (p != null && !p.IsReadOnly)
                 return p.Set(newText);
 
-            // Fallback common names
             string[] names = { "Type Comments", "Comments", "Comment", "COMMENT" };
             foreach (string nm in names)
             {
@@ -134,14 +145,12 @@ namespace QPK_Keynote_Manager
             }
             catch
             {
-                // ignore and return false
             }
             return false;
         }
 
         private string GetSheetNameForSchedule(ViewSchedule vs)
         {
-            // If schedule is placed on one or more sheets, return "S101 - My Sheet" for the first one
             try
             {
                 var viewports = new FilteredElementCollector(_doc)
@@ -164,9 +173,6 @@ namespace QPK_Keynote_Manager
             }
         }
 
-        /// <summary>
-        /// Get elements that appear in this schedule. Using a view-specific collector.
-        /// </summary>
         private IEnumerable<Element> GetElementsForSchedule(ViewSchedule vs)
         {
             try
@@ -179,6 +185,68 @@ namespace QPK_Keynote_Manager
             {
                 return Enumerable.Empty<Element>();
             }
+        }
+
+        /// <summary>
+        /// Build the small context string around the first occurrence of <paramref name="search"/>.
+        /// Returns pieces for the "found" and "replaced" context strings.
+        /// </summary>
+        private void BuildContextStrings(
+            string fullOld,
+            string search,
+            string replace,
+            out string foundPrefix,
+            out string foundWord,
+            out string foundSuffix,
+            out string replPrefix,
+            out string replWord,
+            out string replSuffix)
+        {
+            foundPrefix = foundWord = foundSuffix = string.Empty;
+            replPrefix = replWord = replSuffix = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(fullOld) || string.IsNullOrEmpty(search))
+                return;
+
+            var tokens = fullOld
+                .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .ToArray();
+
+            if (tokens.Length == 0) return;
+
+            int hitIndex = -1;
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                // Strip simple punctuation when checking for equality
+                string core = tokens[i].Trim(',', '.', ';', ':', '!', '?');
+                if (string.Equals(core, search, StringComparison.Ordinal))
+                {
+                    hitIndex = i;
+                    break;
+                }
+            }
+
+            if (hitIndex == -1)
+            {
+                // Fallback: we didn't find a clean word match, just bail to entire sentence.
+                foundPrefix = fullOld;
+                replPrefix = fullOld.Replace(search, replace);
+                return;
+            }
+
+            int start = Math.Max(hitIndex - 2, 0);
+            int end = Math.Min(hitIndex + 2, tokens.Length - 1);
+
+            var beforeTokens = tokens.Skip(start).Take(hitIndex - start).ToArray();
+            var afterTokens = tokens.Skip(hitIndex + 1).Take(end - hitIndex).ToArray();
+
+            foundPrefix = beforeTokens.Length > 0 ? string.Join(" ", beforeTokens) + " " : string.Empty;
+            foundWord = tokens[hitIndex];
+            foundSuffix = afterTokens.Length > 0 ? " " + string.Join(" ", afterTokens) : string.Empty;
+
+            replPrefix = foundPrefix;
+            replWord = replace;
+            replSuffix = foundSuffix;
         }
 
         #endregion
@@ -231,7 +299,6 @@ namespace QPK_Keynote_Manager
                     if (typeId == null || typeId == ElementId.InvalidElementId)
                         continue;
 
-                    // Only preview each Type once
                     if (seenTypeIds.Contains(typeId))
                         continue;
 
@@ -247,14 +314,32 @@ namespace QPK_Keynote_Manager
                     if (newComment == oldComment)
                         continue;
 
+                    // Build context strings for display
+                    BuildContextStrings(
+                        oldComment,
+                        search,
+                        replace,
+                        out string fPrefix,
+                        out string fWord,
+                        out string fSuffix,
+                        out string rPrefix,
+                        out string rWord,
+                        out string rSuffix);
+
                     seenTypeIds.Add(typeId);
                     matchCount++;
 
                     ReplaceResults.Add(new ReplaceResult
                     {
                         TypeId = typeId,
-                        StringFound = oldComment,
-                        StringReplaced = newComment,
+                        FullOldComment = oldComment,
+                        FullNewComment = newComment,
+                        FoundPrefix = fPrefix,
+                        FoundWord = fWord,
+                        FoundSuffix = fSuffix,
+                        ReplPrefix = rPrefix,
+                        ReplWord = rWord,
+                        ReplSuffix = rSuffix,
                         Sheet = sheetName,
                         ScheduleName = vs.Name
                     });
@@ -268,7 +353,6 @@ namespace QPK_Keynote_Manager
                 MessageBoxImage.Information);
         }
 
-        // These now just raise ExternalEvents – no Transactions here.
         private void ReplaceAll_Click(object sender, RoutedEventArgs e)
         {
             _replaceAllEvent.Raise();
@@ -284,9 +368,6 @@ namespace QPK_Keynote_Manager
 
     #region External Event Handlers
 
-    /// <summary>
-    /// Handles "Replace All" inside Revit's API context.
-    /// </summary>
     public class ReplaceAllHandler : IExternalEventHandler
     {
         private readonly MainWindow _window;
@@ -325,7 +406,7 @@ namespace QPK_Keynote_Manager
                     var tElem = doc.GetElement(r.TypeId);
                     if (tElem == null) continue;
 
-                    if (_window.SetTypeComment(tElem, r.StringReplaced))
+                    if (_window.SetTypeComment(tElem, r.FullNewComment))
                         changed++;
                 }
 
@@ -342,9 +423,6 @@ namespace QPK_Keynote_Manager
         }
     }
 
-    /// <summary>
-    /// Handles "Replace Selected" inside Revit's API context.
-    /// </summary>
     public class ReplaceSelectedHandler : IExternalEventHandler
     {
         private readonly MainWindow _window;
@@ -379,7 +457,7 @@ namespace QPK_Keynote_Manager
                 tx.Start();
 
                 var tElem = doc.GetElement(selected.TypeId);
-                bool ok = _window.SetTypeComment(tElem, selected.StringReplaced);
+                bool ok = _window.SetTypeComment(tElem, selected.FullNewComment);
 
                 if (ok)
                 {

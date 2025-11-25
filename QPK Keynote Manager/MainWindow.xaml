@@ -157,15 +157,36 @@
                     </DataGrid.Resources>
 
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="String Found"
-                                        Binding="{Binding StringFound}"
-                                        Width="*"/>
-                        <DataGridTextColumn Header="String Replaced"
-                                        Binding="{Binding StringReplaced}"
-                                        Width="*"/>
+                        <!-- String Found with target word in red -->
+                        <DataGridTemplateColumn Header="String Found" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock TextWrapping="Wrap">
+                    <Run Text="{Binding FoundPrefix}" />
+                    <Run Text="{Binding FoundWord}" Foreground="Red" />
+                    <Run Text="{Binding FoundSuffix}" />
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- String Replaced with replacement word in green -->
+                        <DataGridTemplateColumn Header="String Replaced" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock TextWrapping="Wrap">
+                    <Run Text="{Binding ReplPrefix}" />
+                    <Run Text="{Binding ReplWord}" Foreground="Green" />
+                    <Run Text="{Binding ReplSuffix}" />
+                                    </TextBlock>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <!-- Sheet column remains a normal text column -->
                         <DataGridTextColumn Header="Sheet"
-                                        Binding="{Binding Sheet}"
-                                        Width="0.8*"/>
+                        Binding="{Binding Sheet}"
+                        Width="0.8*" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
