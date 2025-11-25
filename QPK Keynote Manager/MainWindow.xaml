@@ -5,8 +5,137 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QPK_Keynote_Manager"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="MainWindow" Height="800" Width="800">
+    <!-- Find / Replace + Results -->
+    <Grid Grid.Row="2" Margin="0,20,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
 
+        <!-- Find / Replace Card -->
+        <Grid Grid.Row="0" Margin="10,0,10,10">
+            <Border Background="#fff"
+                BorderBrush="LightGray"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="10"
+                HorizontalAlignment="Stretch"
+                Panel.ZIndex="0">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Find String -->
+                    <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                        <TextBlock Text="Find String"
+                               FontWeight="Bold"
+                               Margin="5,0,0,5" />
+                        <TextBox x:Name="FindTextBox"
+                             Text="{Binding FindText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Height="30"
+                             BorderBrush="Gray"
+                             BorderThickness="1"
+                             Padding="5" />
+                    </StackPanel>
+
+                    <!-- Replace String -->
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Replace With"
+                               FontWeight="Bold"
+                               Margin="5,0,0,5" />
+                        <TextBox x:Name="ReplaceTextBox"
+                             Text="{Binding ReplaceText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Height="30"
+                             BorderBrush="Gray"
+                             BorderThickness="1"
+                             Padding="5" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Overlapping Label -->
+            <TextBlock Text="Find &amp; Replace"
+                   FontWeight="Bold"
+                   FontSize="14"
+                   Background="White"
+                   Foreground="Black"
+                   Margin="20,-10,0,0"
+                   Padding="4,0"
+                   VerticalAlignment="Top"
+                   HorizontalAlignment="Left"
+                   Panel.ZIndex="1" />
+        </Grid>
+
+        <!-- Results DataGrid Card -->
+        <Grid Grid.Row="1" Margin="10,0,10,10">
+            <Border Background="#fff"
+                BorderBrush="LightGray"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="10"
+                HorizontalAlignment="Stretch"
+                Panel.ZIndex="0">
+                <DataGrid x:Name="ResultsDataGrid"
+                      ItemsSource="{Binding ReplaceResults}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      IsReadOnly="True"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="None"
+                      RowHeaderWidth="0"
+                      Margin="0"
+                      AlternatingRowBackground="#FFF7F7F7"
+                      BorderThickness="0">
+                    <DataGrid.Resources>
+                        <!-- Header style -->
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="Background" Value="#FFF0F0F0"/>
+                            <Setter Property="Foreground" Value="Black"/>
+                            <Setter Property="FontWeight" Value="Bold"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="BorderBrush" Value="LightGray"/>
+                            <Setter Property="Padding" Value="6,4"/>
+                        </Style>
+
+                        <!-- Row style -->
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="SnapsToDevicePixels" Value="True"/>
+                            <Setter Property="Padding" Value="2"/>
+                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                            <Setter Property="BorderBrush" Value="#FFE5E5E5"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </DataGrid.Resources>
+
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="String Found"
+                                        Binding="{Binding StringFound}"
+                                        Width="*" />
+                        <DataGridTextColumn Header="String Replaced"
+                                        Binding="{Binding StringReplaced}"
+                                        Width="*" />
+                        <DataGridTextColumn Header="Sheet"
+                                        Binding="{Binding Sheet}"
+                                        Width="0.6*" />
+                    </DataGrid.Columns>
+                </DataGrid>
+            </Border>
+
+            <!-- Overlapping Label -->
+            <TextBlock Text="Preview / Results"
+                   FontWeight="Bold"
+                   FontSize="14"
+                   Background="White"
+                   Foreground="Black"
+                   Margin="20,-10,0,0"
+                   Padding="4,0"
+                   VerticalAlignment="Top"
+                   HorizontalAlignment="Left"
+                   Panel.ZIndex="1" />
+        </Grid>
     </Grid>
+
 </Window>
