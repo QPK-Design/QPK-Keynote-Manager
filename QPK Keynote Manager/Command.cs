@@ -1,6 +1,6 @@
 ﻿#region Namespaces
 using System;
-using System.Windows;                // For Window
+using System.Windows;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -14,7 +14,7 @@ namespace QPK_Keynote_Manager
     [Transaction(TransactionMode.Manual)]
     public class ShowMainWindowCommand : IExternalCommand
     {
-        // Keep a static instance so we don't open multiple copies.
+        // Keep a static reference so we don't open multiple windows.
         private static MainWindow _mainWindow;
 
         public Result Execute(
@@ -27,21 +27,16 @@ namespace QPK_Keynote_Manager
                 UIApplication uiapp = commandData.Application;
                 UIDocument uidoc = uiapp.ActiveUIDocument;
 
-                // If window doesn't exist or was closed, create a new one
+                // Create window if none exists (or was closed)
                 if (_mainWindow == null)
                 {
-                    // If your MainWindow needs Revit data, you can pass uidoc here later:
-                    // _mainWindow = new MainWindow(uidoc);
-                    _mainWindow = new MainWindow();
-
-                    // When user closes the window, clear the static reference
+                    _mainWindow = new MainWindow(uidoc);  // <-- IMPORTANT
                     _mainWindow.Closed += (s, e) => _mainWindow = null;
-
-                    _mainWindow.Show();
+                    _mainWindow.Show();                  // modeless window
                 }
                 else
                 {
-                    // If window already exists, just bring it to front
+                    // Bring to front if already open
                     if (!_mainWindow.IsVisible)
                         _mainWindow.Show();
 
@@ -54,7 +49,6 @@ namespace QPK_Keynote_Manager
             {
                 message = ex.Message;
                 return Result.Failed;
-                adadf
             }
         }
     }
