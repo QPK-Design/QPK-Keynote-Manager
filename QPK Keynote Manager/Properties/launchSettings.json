@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "QPK Keynote Manager": {
+      "commandName": "Project"
+    },
+    "Launch": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Program Files\\Autodesk\\Revit 2025\\Revit.exe"
+    }
+  }
+}

@@ -4,7 +4,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
@@ -18,11 +17,13 @@ namespace QPK_Keynote_Manager
         private readonly UIDocument _uidoc;
         private readonly Document _doc;
 
-        // Collection bound to the DataGrid
+        private readonly ExternalEvent _replaceAllEvent;
+        private readonly ExternalEvent _replaceSelectedEvent;
+
         public ObservableCollection<ReplaceResult> ReplaceResults { get; }
             = new ObservableCollection<ReplaceResult>();
 
-        // Bound to the Find / Replace TextBoxes (optional; we also read from the boxes directly)
+        // Bound to the Find / Replace TextBoxes (optional, since we read from TextBoxes directly)
         public string FindText { get; set; }
         public string ReplaceText { get; set; }
 
@@ -32,45 +33,48 @@ namespace QPK_Keynote_Manager
             _doc = uidoc.Document;
 
             InitializeComponent();
+            DataContext = this;   // enables bindings to FindText / ReplaceText / ReplaceResults
 
-            // Bind this instance as DataContext so bindings work:
-            //   - FindText, ReplaceText (if you use them)
-            //   - ReplaceResults for the DataGrid
-            DataContext = this;
+            // Create ExternalEvents for modeless operations
+            _replaceAllEvent = ExternalEvent.Create(new ReplaceAllHandler(this));
+            _replaceSelectedEvent = ExternalEvent.Create(new ReplaceSelectedHandler(this));
         }
 
-        // Model for each row in the DataGrid
+        #region Data Model
+
         public class ReplaceResult
         {
             public ElementId TypeId { get; set; }      // For applying changes
             public string StringFound { get; set; }    // Original type comment
             public string StringReplaced { get; set; } // New type comment
-            public string Sheet { get; set; }          // Sheet number/name (if schedule is placed)
-            public string ScheduleName { get; set; }   // Schedule this came from (optional)
+            public string Sheet { get; set; }          // Sheet name/number (if on sheet)
+            public string ScheduleName { get; set; }   // Schedule that produced this row
         }
 
-        #region Helpers: get/set type comments
+        #endregion
+
+        #region Helpers – Type Comments
 
         private string GetTypeComment(Element tElem)
         {
             if (tElem == null) return string.Empty;
 
             // Try built-in "Type Comments"
-            var p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+            Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
             if (p != null)
             {
-                var s = p.AsString();
+                string s = p.AsString();
                 if (!string.IsNullOrEmpty(s)) return s;
             }
 
             // Fallback common names
             string[] names = { "Type Comments", "Comments", "Comment", "COMMENT" };
-            foreach (var nm in names)
+            foreach (string nm in names)
             {
                 p = tElem.LookupParameter(nm);
                 if (p != null)
                 {
-                    var s = p.AsString();
+                    string s = p.AsString();
                     if (!string.IsNullOrEmpty(s)) return s;
                 }
             }
@@ -78,18 +82,18 @@ namespace QPK_Keynote_Manager
             return string.Empty;
         }
 
-        private bool SetTypeComment(Element tElem, string newText)
+        internal bool SetTypeComment(Element tElem, string newText)
         {
             if (tElem == null) return false;
 
             // Prefer built-in
-            var p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+            Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
             if (p != null && !p.IsReadOnly)
                 return p.Set(newText);
 
             // Fallback common names
             string[] names = { "Type Comments", "Comments", "Comment", "COMMENT" };
-            foreach (var nm in names)
+            foreach (string nm in names)
             {
                 p = tElem.LookupParameter(nm);
                 if (p != null && !p.IsReadOnly)
@@ -101,7 +105,7 @@ namespace QPK_Keynote_Manager
 
         #endregion
 
-        #region Helpers: schedules & sheet name
+        #region Helpers – Schedule / Elements
 
         private IEnumerable<ViewSchedule> CollectSchedules(Document doc)
         {
@@ -120,7 +124,6 @@ namespace QPK_Keynote_Manager
                 {
                     var f = def.GetField(i);
                     string name = f.GetName();
-
                     if (!string.IsNullOrEmpty(name) &&
                         (name.Equals("Comment", StringComparison.OrdinalIgnoreCase) ||
                          name.Equals("Comments", StringComparison.OrdinalIgnoreCase)))
@@ -131,15 +134,14 @@ namespace QPK_Keynote_Manager
             }
             catch
             {
-                // ignore and treat as false
+                // ignore and return false
             }
-
             return false;
         }
 
         private string GetSheetNameForSchedule(ViewSchedule vs)
         {
-            // If schedule placed on sheet(s), return "S101 - My Sheet", etc.
+            // If schedule is placed on one or more sheets, return "S101 - My Sheet" for the first one
             try
             {
                 var viewports = new FilteredElementCollector(_doc)
@@ -151,7 +153,6 @@ namespace QPK_Keynote_Manager
                 if (!viewports.Any())
                     return string.Empty;
 
-                // Take the first sheet for display
                 var sheet = _doc.GetElement(viewports[0].SheetId) as ViewSheet;
                 if (sheet == null) return string.Empty;
 
@@ -163,30 +164,35 @@ namespace QPK_Keynote_Manager
             }
         }
 
-        #endregion
-
-        #region Button Handlers
-
+        /// <summary>
+        /// Get elements that appear in this schedule. Using a view-specific collector.
+        /// </summary>
         private IEnumerable<Element> GetElementsForSchedule(ViewSchedule vs)
         {
-            if (vs == null)
+            try
+            {
+                return new FilteredElementCollector(_doc, vs.Id)
+                    .WhereElementIsNotElementType()
+                    .ToElements();
+            }
+            catch
+            {
                 return Enumerable.Empty<Element>();
-
-            var def = vs.Definition;
-            if (def == null)
-                return Enumerable.Empty<Element>();
-
-            ElementId catId = def.CategoryId;
-            if (catId == null || catId == ElementId.InvalidElementId)
-                return Enumerable.Empty<Element>();
-
-            // Collect all non-type elements in the same category as the schedule
-            var collector = new FilteredElementCollector(_doc)
-                .OfCategoryId(catId)
-                .WhereElementIsNotElementType();
-
-            return collector.Cast<Element>();
+            }
         }
+
+        #endregion
+
+        #region Exposed helpers for handlers
+
+        internal ReplaceResult GetSelectedResult()
+        {
+            return ResultsDataGrid.SelectedItem as ReplaceResult;
+        }
+
+        #endregion
+
+        #region UI Handlers
 
         // PREVIEW – scan schedules, populate DataGrid with old/new values + sheet
         private void PreviewFindReplace_Click(object sender, RoutedEventArgs e)
@@ -215,19 +221,6 @@ namespace QPK_Keynote_Manager
                 scheduleCount++;
                 string sheetName = GetSheetNameForSchedule(vs);
 
-                // 🚫 OLD (doesn't exist in your API):
-                // FilteredElementCollector coll;
-                // try
-                // {
-                //     coll = vs.GetFilteredElementCollector();
-                // }
-                // catch
-                // {
-                //     coll = new FilteredElementCollector(_doc, vs.Id)
-                //         .WhereElementIsNotElementType();
-                // }
-
-                // ✅ NEW: use our helper
                 IEnumerable<Element> elements = GetElementsForSchedule(vs);
 
                 foreach (var elem in elements)
@@ -266,7 +259,6 @@ namespace QPK_Keynote_Manager
                         ScheduleName = vs.Name
                     });
                 }
-
             }
 
             MessageBox.Show(
@@ -276,80 +268,141 @@ namespace QPK_Keynote_Manager
                 MessageBoxImage.Information);
         }
 
-
-        // REPLACE ALL – apply all previewed replacements
+        // These now just raise ExternalEvents – no Transactions here.
         private void ReplaceAll_Click(object sender, RoutedEventArgs e)
         {
-            if (!ReplaceResults.Any())
+            _replaceAllEvent.Raise();
+        }
+
+        private void ReplaceSelected_Click(object sender, RoutedEventArgs e)
+        {
+            _replaceSelectedEvent.Raise();
+        }
+
+        #endregion
+    }
+
+    #region External Event Handlers
+
+    /// <summary>
+    /// Handles "Replace All" inside Revit's API context.
+    /// </summary>
+    public class ReplaceAllHandler : IExternalEventHandler
+    {
+        private readonly MainWindow _window;
+
+        public ReplaceAllHandler(MainWindow window)
+        {
+            _window = window;
+        }
+
+        public void Execute(UIApplication app)
+        {
+            UIDocument uidoc = app.ActiveUIDocument;
+            if (uidoc == null)
             {
-                MessageBox.Show("No preview results to apply. Click Preview first.",
-                    "Replace All", MessageBoxButton.OK, MessageBoxImage.Information);
+                TaskDialog.Show("QPK Keynote Manager",
+                    "No active document.");
                 return;
             }
 
-            using (var tx = new Transaction(_doc, "Replace Type Comments (All)"))
+            Document doc = uidoc.Document;
+            var results = _window.ReplaceResults;
+            if (results == null || !results.Any())
+            {
+                TaskDialog.Show("QPK Keynote Manager",
+                    "No preview results to apply. Click Preview first.");
+                return;
+            }
+
+            using (var tx = new Transaction(doc, "Replace Type Comments (All)"))
             {
                 tx.Start();
 
                 int changed = 0;
-                foreach (var r in ReplaceResults)
+                foreach (var r in results)
                 {
-                    var tElem = _doc.GetElement(r.TypeId);
+                    var tElem = doc.GetElement(r.TypeId);
                     if (tElem == null) continue;
 
-                    if (SetTypeComment(tElem, r.StringReplaced))
+                    if (_window.SetTypeComment(tElem, r.StringReplaced))
                         changed++;
                 }
 
                 tx.Commit();
 
-                MessageBox.Show(
-                    $"Updated type comments on {changed} type(s).",
-                    "Replace All",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information);
+                TaskDialog.Show("QPK Keynote Manager",
+                    $"Updated type comments on {changed} type(s).");
             }
         }
 
-        // REPLACE SELECTED – only apply for the currently selected row
-        private void ReplaceSelected_Click(object sender, RoutedEventArgs e)
+        public string GetName()
         {
-            var selected = ResultsDataGrid.SelectedItem as ReplaceResult;
-            if (selected == null)
+            return "QPK Keynote Manager – Replace All";
+        }
+    }
+
+    /// <summary>
+    /// Handles "Replace Selected" inside Revit's API context.
+    /// </summary>
+    public class ReplaceSelectedHandler : IExternalEventHandler
+    {
+        private readonly MainWindow _window;
+
+        public ReplaceSelectedHandler(MainWindow window)
+        {
+            _window = window;
+        }
+
+        public void Execute(UIApplication app)
+        {
+            UIDocument uidoc = app.ActiveUIDocument;
+            if (uidoc == null)
             {
-                MessageBox.Show("Select a row in the results grid first.",
-                    "Replace Selected", MessageBoxButton.OK, MessageBoxImage.Information);
+                TaskDialog.Show("QPK Keynote Manager",
+                    "No active document.");
                 return;
             }
 
-            using (var tx = new Transaction(_doc, "Replace Type Comment (Selected)"))
+            Document doc = uidoc.Document;
+
+            var selected = _window.GetSelectedResult();
+            if (selected == null)
+            {
+                TaskDialog.Show("QPK Keynote Manager",
+                    "Select a row in the results grid first.");
+                return;
+            }
+
+            using (var tx = new Transaction(doc, "Replace Type Comment (Selected)"))
             {
                 tx.Start();
 
-                var tElem = _doc.GetElement(selected.TypeId);
-                bool ok = SetTypeComment(tElem, selected.StringReplaced);
-
-                tx.Commit();
+                var tElem = doc.GetElement(selected.TypeId);
+                bool ok = _window.SetTypeComment(tElem, selected.StringReplaced);
 
                 if (ok)
                 {
-                    MessageBox.Show(
-                        $"Updated type comment for TypeId {selected.TypeId.IntegerValue}.",
-                        "Replace Selected",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
+                    tx.Commit();
+                    TaskDialog.Show(
+                        "QPK Keynote Manager",
+                        $"Updated type comment for TypeId {selected.TypeId.IntegerValue}.");
                 }
                 else
                 {
-                    MessageBox.Show(
-                        "Failed to set type comment (parameter may be read-only).",
-                        "Replace Selected",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning);
+                    tx.RollBack();
+                    TaskDialog.Show(
+                        "QPK Keynote Manager",
+                        "Failed to set type comment (parameter may be read-only).");
                 }
             }
         }
 
-        #endregion
+        public string GetName()
+        {
+            return "QPK Keynote Manager – Replace Selected";
+        }
     }
+
+    #endregion
 }
