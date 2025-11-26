@@ -473,7 +473,7 @@ namespace QPK_Keynote_Manager
                         "QPK Keynote Manager",
                         "Failed to set type comment (parameter may be read-only).");
                 }
-                // tests
+                
             }
         }
 

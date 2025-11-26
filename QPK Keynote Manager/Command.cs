@@ -27,7 +27,7 @@ namespace QPK_Keynote_Manager
                 UIApplication uiapp = commandData.Application;
                 UIDocument uidoc = uiapp.ActiveUIDocument;
 
-                // Create window if none exists (or was closed)
+                // Create window if none exists (or was closed) af
                 if (_mainWindow == null)
                 {
                     _mainWindow = new MainWindow(uidoc);  // <-- IMPORTANT
