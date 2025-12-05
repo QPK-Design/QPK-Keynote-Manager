@@ -460,6 +460,7 @@ namespace QPK_Keynote_Manager
 
                     if (_window.SetTypeComment(tElem, r.FullNewComment))
                         changed++;
+                        r.IsApplied = true;  // <--- mark row as applied
                 }
 
                 tx.Commit();
