@@ -47,13 +47,13 @@ namespace QPK_Keynote_Manager
 
                 PushButtonData buttonData = new PushButtonData(
                     "QPK_MainWindow",
-                    "Open QPK Tool",
+                    "QPK Keynote Manager",
                     assemblyPath,
                     "QPK_Keynote_Manager.ShowMainWindowCommand"
                 );
 
                 // Optional image
-                string img = Path.Combine(folder, "QPKIcon.png");
+                string img = Path.Combine(folder, "Resources", "QPKKNM_32.png");
                 if (File.Exists(img))
                 {
                     buttonData.LargeImage = LoadPng(img);

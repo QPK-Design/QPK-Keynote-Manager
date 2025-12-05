@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
@@ -41,9 +43,11 @@ namespace QPK_Keynote_Manager
 
         #region Data Model
 
-        public class ReplaceResult
+        public class ReplaceResult : INotifyPropertyChanged
         {
             public ElementId TypeId { get; set; }
+
+            public string Number { get; set; }
 
             // Full comments used for actual Revit parameter updates
             public string FullOldComment { get; set; }
@@ -59,14 +63,31 @@ namespace QPK_Keynote_Manager
             public string ReplSuffix { get; set; }
 
             public string Sheet { get; set; }
+
+            // 🔹 add this (see next section)
             public string ScheduleName { get; set; }
 
-            // Handy combined strings (not used for coloring, but available)
-            public string StringFound => string.Concat(FoundPrefix, FoundWord, FoundSuffix);
-            public string StringReplaced => string.Concat(ReplPrefix, ReplWord, ReplSuffix);
+            private bool _isApplied;
+            public bool IsApplied
+            {
+                get => _isApplied;
+                set
+                {
+                    if (_isApplied != value)
+                    {
+                        _isApplied = value;
+                        OnPropertyChanged();
+                    }
+                }
+            }
+
+            public event PropertyChangedEventHandler PropertyChanged;
+            private void OnPropertyChanged([CallerMemberName] string name = null)
+                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         #endregion
+
 
         #region Helpers – Type Comments
 
@@ -217,9 +238,13 @@ namespace QPK_Keynote_Manager
             int hitIndex = -1;
             for (int i = 0; i < tokens.Length; i++)
             {
-                // Strip simple punctuation when checking for equality
-                string core = tokens[i].Trim(',', '.', ';', ':', '!', '?');
-                if (string.Equals(core, search, StringComparison.Ordinal))
+                // Strip simple punctuation when checking for a match
+                string token = tokens[i];
+                string core = token.Trim(',', '.', ';', ':', '!', '?');
+
+                // Treat any token that *contains* the search text as a hit
+                // This will catch DRAIN, DRAINS, DRAIN., etc.
+                if (core.IndexOf(search, StringComparison.Ordinal) >= 0)
                 {
                     hitIndex = i;
                     break;
@@ -241,11 +266,13 @@ namespace QPK_Keynote_Manager
             var afterTokens = tokens.Skip(hitIndex + 1).Take(end - hitIndex).ToArray();
 
             foundPrefix = beforeTokens.Length > 0 ? string.Join(" ", beforeTokens) + " " : string.Empty;
-            foundWord = tokens[hitIndex];
+            string matchedToken = tokens[hitIndex];
+            foundWord = matchedToken;
             foundSuffix = afterTokens.Length > 0 ? " " + string.Join(" ", afterTokens) : string.Empty;
 
             replPrefix = foundPrefix;
-            replWord = replace;
+            // Apply the same replacement logic to just the matched token
+            replWord = matchedToken.Replace(search, replace);
             replSuffix = foundSuffix;
         }
 
@@ -302,7 +329,31 @@ namespace QPK_Keynote_Manager
                     if (seenTypeIds.Contains(typeId))
                         continue;
 
+                    
                     var tElem = _doc.GetElement(typeId);
+
+                    // --- get NUMBER from the TYPE parameter ---
+                    string number = string.Empty;
+                    Parameter numParam = null;
+
+                    if (tElem != null)
+                    {
+                        // Try common name variants, since LookupParameter is case-sensitive
+                        numParam = tElem.LookupParameter("NUMBER")
+                               ?? tElem.LookupParameter("Number")
+                               ?? tElem.LookupParameter("number");
+                    }
+
+                    if (numParam != null)
+                    {
+                        if (numParam.StorageType == StorageType.String)
+                            number = numParam.AsString();
+                        else
+                            number = numParam.AsValueString();
+                    }
+                    // --- end NUMBER lookup ---
+
+
                     string oldComment = GetTypeComment(tElem);
                     if (string.IsNullOrEmpty(oldComment))
                         continue;
@@ -332,6 +383,7 @@ namespace QPK_Keynote_Manager
                     ReplaceResults.Add(new ReplaceResult
                     {
                         TypeId = typeId,
+                        Number = number,
                         FullOldComment = oldComment,
                         FullNewComment = newComment,
                         FoundPrefix = fPrefix,
@@ -462,6 +514,8 @@ namespace QPK_Keynote_Manager
                 if (ok)
                 {
                     tx.Commit();
+                    selected.IsApplied = true;   // <--- visually mark the row
+
                     TaskDialog.Show(
                         "QPK Keynote Manager",
                         $"Updated type comment for TypeId {selected.TypeId.IntegerValue}.");
@@ -473,8 +527,8 @@ namespace QPK_Keynote_Manager
                         "QPK Keynote Manager",
                         "Failed to set type comment (parameter may be read-only).");
                 }
-                
             }
+
         }
 
         public string GetName()

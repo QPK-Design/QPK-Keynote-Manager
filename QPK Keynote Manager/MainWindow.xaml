@@ -125,70 +125,55 @@
                 HorizontalAlignment="Stretch"
                 Panel.ZIndex="0">
                 <DataGrid x:Name="ResultsDataGrid"
-                      ItemsSource="{Binding ReplaceResults}"
-                      AutoGenerateColumns="False"
-                      CanUserAddRows="False"
-                      IsReadOnly="True"
-                      HeadersVisibility="Column"
-                      GridLinesVisibility="None"
-                      RowHeaderWidth="0"
-                      Margin="0"
-                      AlternatingRowBackground="#FFF7F7F7"
-                      BorderThickness="0">
-                    <DataGrid.Resources>
-                        <!-- Header style -->
-                        <Style TargetType="DataGridColumnHeader">
-                            <Setter Property="Background" Value="#FFF0F0F0"/>
-                            <Setter Property="Foreground" Value="Black"/>
-                            <Setter Property="FontWeight" Value="Bold"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                            <Setter Property="BorderBrush" Value="LightGray"/>
-                            <Setter Property="Padding" Value="6,4"/>
-                        </Style>
+          ItemsSource="{Binding ReplaceResults}"
+          AutoGenerateColumns="False"
+          IsReadOnly="True"
+          Grid.Row="1"
+          Margin="5">
 
-                        <!-- Row style -->
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="SnapsToDevicePixels" Value="True"/>
-                            <Setter Property="Padding" Value="2"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                            <Setter Property="BorderBrush" Value="#FFE5E5E5"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                        </Style>
+                    <DataGrid.Resources>
+                        <!-- your header + row styles, including IsApplied background trigger -->
                     </DataGrid.Resources>
 
                     <DataGrid.Columns>
-                        <!-- String Found with target word in red -->
-                        <DataGridTemplateColumn Header="String Found" Width="*">
+                        <!-- NEW: Number column (1 unit) -->
+                        <DataGridTextColumn Header="Number"
+                            Binding="{Binding Number}"
+                            Width="1*" />
+
+                        <!-- String Found (3 units) -->
+                        <DataGridTemplateColumn Header="String Found" Width="3*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock TextWrapping="Wrap">
-                    <Run Text="{Binding FoundPrefix}" />
-                    <Run Text="{Binding FoundWord}" Foreground="Red" />
-                    <Run Text="{Binding FoundSuffix}" />
+                        <Run Text="{Binding FoundPrefix}" />
+                        <Run Text="{Binding FoundWord}" Foreground="Red" FontWeight="Bold" />
+                        <Run Text="{Binding FoundSuffix}" />
                                     </TextBlock>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <!-- String Replaced with replacement word in green -->
-                        <DataGridTemplateColumn Header="String Replaced" Width="*">
+                        <!-- String Replaced (3 units) -->
+                        <DataGridTemplateColumn Header="String Replaced" Width="3*">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock TextWrapping="Wrap">
-                    <Run Text="{Binding ReplPrefix}" />
-                    <Run Text="{Binding ReplWord}" Foreground="Green" />
-                    <Run Text="{Binding ReplSuffix}" />
+                                        <Run Text="{Binding ReplPrefix}" />
+                                        <Run Text="{Binding ReplWord}" Foreground="Green" FontWeight="Bold" />
+                                        <Run Text="{Binding ReplSuffix}" />
                                     </TextBlock>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <!-- Sheet column remains a normal text column -->
+                        <!-- Sheet (2 units) -->
                         <DataGridTextColumn Header="Sheet"
-                        Binding="{Binding Sheet}"
-                        Width="0.8*" />
+                            Binding="{Binding Sheet}"
+                            Width="2*" />
                     </DataGrid.Columns>
                 </DataGrid>
+
             </Border>
 
             <!-- Overlapping Label -->
