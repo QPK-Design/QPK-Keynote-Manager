@@ -91,6 +91,36 @@ namespace QPK_Keynote_Manager
 
         #region Helpers – Type Comments
 
+        private string GetSheetNameForElement(Element elem)
+        {
+            if (elem == null)
+                return "Not on a Sheet";
+
+            ElementId ownerViewId = elem.OwnerViewId;
+            if (ownerViewId == null || ownerViewId == ElementId.InvalidElementId)
+                return "Not on a Sheet";
+
+            var ownerView = _doc.GetElement(ownerViewId) as View;
+            if (ownerView == null)
+                return "Not on a Sheet";
+
+            // Find the viewport that places this view on a sheet
+            var viewport = new FilteredElementCollector(_doc)
+                .OfClass(typeof(Viewport))
+                .Cast<Viewport>()
+                .FirstOrDefault(vp => vp.ViewId == ownerView.Id);
+
+            if (viewport == null)
+                return "Not on a Sheet";
+
+            var sheet = _doc.GetElement(viewport.SheetId) as ViewSheet;
+            if (sheet == null)
+                return "Not on a Sheet";
+
+            return $"{sheet.SheetNumber} - {sheet.Name}";
+        }
+
+
         private string GetTypeComment(Element tElem)
         {
             if (tElem == null) return string.Empty;
@@ -314,7 +344,6 @@ namespace QPK_Keynote_Manager
                     continue;
 
                 scheduleCount++;
-                string sheetName = GetSheetNameForSchedule(vs);
 
                 IEnumerable<Element> elements = GetElementsForSchedule(vs);
 
@@ -329,16 +358,14 @@ namespace QPK_Keynote_Manager
                     if (seenTypeIds.Contains(typeId))
                         continue;
 
-                    
                     var tElem = _doc.GetElement(typeId);
 
-                    // --- get NUMBER from the TYPE parameter ---
+                    // --- get NUMBER from the TYPE parameter (unchanged) ---
                     string number = string.Empty;
                     Parameter numParam = null;
 
                     if (tElem != null)
                     {
-                        // Try common name variants, since LookupParameter is case-sensitive
                         numParam = tElem.LookupParameter("NUMBER")
                                ?? tElem.LookupParameter("Number")
                                ?? tElem.LookupParameter("number");
@@ -352,7 +379,6 @@ namespace QPK_Keynote_Manager
                             number = numParam.AsValueString();
                     }
                     // --- end NUMBER lookup ---
-
 
                     string oldComment = GetTypeComment(tElem);
                     if (string.IsNullOrEmpty(oldComment))
@@ -380,6 +406,9 @@ namespace QPK_Keynote_Manager
                     seenTypeIds.Add(typeId);
                     matchCount++;
 
+                    // NEW: sheet for this keynote instance’s owner view
+                    string sheetName = GetSheetNameForElement(elem);
+
                     ReplaceResults.Add(new ReplaceResult
                     {
                         TypeId = typeId,
@@ -392,11 +421,12 @@ namespace QPK_Keynote_Manager
                         ReplPrefix = rPrefix,
                         ReplWord = rWord,
                         ReplSuffix = rSuffix,
-                        Sheet = sheetName,
+                        Sheet = sheetName,         // now "Not on a Sheet" or actual sheet
                         ScheduleName = vs.Name
                     });
                 }
             }
+
 
             MessageBox.Show(
                 $"Scanned {scheduleCount} schedule(s).\nFound {matchCount} type(s) with matching comments.",
@@ -517,9 +547,6 @@ namespace QPK_Keynote_Manager
                     tx.Commit();
                     selected.IsApplied = true;   // <--- visually mark the row
 
-                    TaskDialog.Show(
-                        "QPK Keynote Manager",
-                        $"Updated type comment for TypeId {selected.TypeId.IntegerValue}.");
                 }
                 else
                 {
@@ -529,7 +556,6 @@ namespace QPK_Keynote_Manager
                         "Failed to set type comment (parameter may be read-only).");
                 }
             }
-
         }
 
         public string GetName()
