@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Text;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
@@ -14,12 +15,13 @@ namespace QPK_Keynote_Manager
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// Future Functions:
-    /// - Case Sensitive Toggle
     /// - Add text note search
     /// - Add sheet name search
     /// - Add view name search
     /// - Make column for "schedule vs text vs sheet name vs view name"
-    /// - Add spell checking function globally
+    /// - Add spell checking function globally (maybe different Revit button, but similar UI output, schedule of occurances)
+    /// - Add QPK Logo at the top right corner of window 
+    /// - Update icon for Search/Replace tool
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -138,7 +140,8 @@ namespace QPK_Keynote_Manager
             isCaseSensitive = caseSensitiveToggle.IsChecked.GetValueOrDefault();
         }
 
-        private string GetTypeComment(Element tElem, string newText)
+        // return the type comment string only when it contains the search (respecting case flag)
+        private string GetTypeComment(Element tElem, string search)
         {
             if (tElem == null) return string.Empty;
 
@@ -146,7 +149,7 @@ namespace QPK_Keynote_Manager
             if (p != null)
             {
                 string s = p.AsString();
-                if (!string.IsNullOrEmpty(s) && CompareStrings(s, newText, isCaseSensitive))
+                if (!string.IsNullOrEmpty(s) && CompareStrings(s, search, isCaseSensitive))
                     return s;
             }
 
@@ -157,7 +160,7 @@ namespace QPK_Keynote_Manager
                 if (p != null)
                 {
                     string s = p.AsString();
-                    if (!string.IsNullOrEmpty(s) && CompareStrings(s, newText, isCaseSensitive))
+                    if (!string.IsNullOrEmpty(s) && CompareStrings(s, search, isCaseSensitive))
                         return s;
                 }
             }
@@ -168,7 +171,38 @@ namespace QPK_Keynote_Manager
 
         private bool CompareStrings(string str1, string str2, bool caseSensitive)
         {
-            return caseSensitive ? str1 == str2 : str1.Equals(str2, StringComparison.OrdinalIgnoreCase);
+            // Match when str1 contains str2, honoring the case sensitivity flag.
+            if (string.IsNullOrEmpty(str1) || string.IsNullOrEmpty(str2))
+                return false;
+
+            var comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            return str1.IndexOf(str2, comparison) >= 0;
+        }
+
+        // Replace that respects case-sensitivity (basic implementation)
+        private static string ReplaceWithComparison(string input, string oldValue, string newValue, bool caseSensitive)
+        {
+            if (string.IsNullOrEmpty(oldValue) || string.IsNullOrEmpty(input))
+                return input;
+
+            if (caseSensitive)
+                return input.Replace(oldValue, newValue);
+
+            var comparison = StringComparison.OrdinalIgnoreCase;
+            int idx = input.IndexOf(oldValue, comparison);
+            if (idx < 0) return input;
+
+            var sb = new StringBuilder();
+            int start = 0;
+            while (idx >= 0)
+            {
+                sb.Append(input, start, idx - start);
+                sb.Append(newValue);
+                start = idx + oldValue.Length;
+                idx = input.IndexOf(oldValue, start, comparison);
+            }
+            sb.Append(input, start, input.Length - start);
+            return sb.ToString();
         }
 
         internal bool SetTypeComment(Element tElem, string newText)
@@ -178,9 +212,15 @@ namespace QPK_Keynote_Manager
             Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
             if (p != null && !p.IsReadOnly)
             {
-                // Here you may want to check the case-sensitive logic
-                if (!isCaseSensitive || p.AsString().Equals(newText, StringComparison.OrdinalIgnoreCase))
-                    return p.Set(newText);
+                string current = p.AsString() ?? string.Empty;
+                bool equal = isCaseSensitive
+                    ? current.Equals(newText, StringComparison.Ordinal)
+                    : current.Equals(newText, StringComparison.OrdinalIgnoreCase);
+
+                if (equal)
+                    return false;
+
+                return p.Set(newText);
             }
 
             // Check alternative parameters
@@ -190,9 +230,15 @@ namespace QPK_Keynote_Manager
                 p = tElem.LookupParameter(nm);
                 if (p != null && !p.IsReadOnly)
                 {
-                    // Check for case-sensitivity before setting
-                    if (!isCaseSensitive || p.AsString().Equals(newText, StringComparison.OrdinalIgnoreCase))
-                        return p.Set(newText);
+                    string current = p.AsString() ?? string.Empty;
+                    bool equal = isCaseSensitive
+                        ? current.Equals(newText, StringComparison.Ordinal)
+                        : current.Equals(newText, StringComparison.OrdinalIgnoreCase);
+
+                    if (equal)
+                        return false;
+
+                    return p.Set(newText);
                 }
             }
 
@@ -300,6 +346,7 @@ namespace QPK_Keynote_Manager
             if (tokens.Length == 0) return;
 
             int hitIndex = -1;
+            var comparison = isCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
             for (int i = 0; i < tokens.Length; i++)
             {
                 // Strip simple punctuation when checking for a match
@@ -307,8 +354,8 @@ namespace QPK_Keynote_Manager
                 string core = token.Trim(',', '.', ';', ':', '!', '?');
 
                 // Treat any token that *contains* the search text as a hit
-                // This will catch DRAIN, DRAINS, DRAIN., etc.
-                if (core.IndexOf(search, StringComparison.Ordinal) >= 0)
+                // Honor case sensitivity
+                if (core.IndexOf(search, comparison) >= 0)
                 {
                     hitIndex = i;
                     break;
@@ -319,7 +366,7 @@ namespace QPK_Keynote_Manager
             {
                 // Fallback: we didn't find a clean word match, just bail to entire sentence.
                 foundPrefix = fullOld;
-                replPrefix = fullOld.Replace(search, replace);
+                replPrefix = ReplaceWithComparison(fullOld, search, replace, isCaseSensitive);
                 return;
             }
 
@@ -335,8 +382,8 @@ namespace QPK_Keynote_Manager
             foundSuffix = afterTokens.Length > 0 ? " " + string.Join(" ", afterTokens) : string.Empty;
 
             replPrefix = foundPrefix;
-            // Apply the same replacement logic to just the matched token
-            replWord = matchedToken.Replace(search, replace);
+            // Apply the same replacement logic to just the matched token (honor case)
+            replWord = ReplaceWithComparison(matchedToken, search, replace, isCaseSensitive);
             replSuffix = foundSuffix;
         }
 
@@ -418,10 +465,11 @@ namespace QPK_Keynote_Manager
                     if (string.IsNullOrEmpty(oldComment))
                         continue;
 
-                    if (!oldComment.Contains(search))
+                    var comparison = isCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+                    if (oldComment.IndexOf(search, comparison) < 0)
                         continue;
 
-                    string newComment = oldComment.Replace(search, replace);
+                    string newComment = ReplaceWithComparison(oldComment, search, replace, isCaseSensitive);
                     if (newComment == oldComment)
                         continue;
 
@@ -523,8 +571,10 @@ namespace QPK_Keynote_Manager
                     if (tElem == null) continue;
 
                     if (_window.SetTypeComment(tElem, r.FullNewComment))
+                    {
                         changed++;
                         r.IsApplied = true;  // <--- mark row as applied
+                    }
                 }
 
                 tx.Commit();
