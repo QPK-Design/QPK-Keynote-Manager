@@ -81,6 +81,8 @@
                             HorizontalAlignment="Right"
                             Margin="0,10,0,0">
 
+                        <ToggleButton x:Name="caseSensitiveToggle" Content="Case Sensitive" IsChecked="False" />
+
                         <Button Content="Preview"
                             Width="100" Height="30"
                             Margin="5,0,0,0"

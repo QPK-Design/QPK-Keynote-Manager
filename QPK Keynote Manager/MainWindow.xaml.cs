@@ -13,6 +13,13 @@ namespace QPK_Keynote_Manager
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
+    /// Future Functions:
+    /// - Case Sensitive Toggle
+    /// - Add text note search
+    /// - Add sheet name search
+    /// - Add view name search
+    /// - Make column for "schedule vs text vs sheet name vs view name"
+    /// - Add spell checking function globally
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -28,6 +35,8 @@ namespace QPK_Keynote_Manager
         // Optional backing for bindings (we still read directly from TextBoxes)
         public string FindText { get; set; }
         public string ReplaceText { get; set; }
+        private bool isCaseSensitive = false; // Default off
+
 
         public MainWindow(UIDocument uidoc)
         {
@@ -39,6 +48,9 @@ namespace QPK_Keynote_Manager
 
             _replaceAllEvent = ExternalEvent.Create(new ReplaceAllHandler(this));
             _replaceSelectedEvent = ExternalEvent.Create(new ReplaceSelectedHandler(this));
+
+            caseSensitiveToggle.Checked += CaseSensitiveToggle_Checked;
+            caseSensitiveToggle.Unchecked += CaseSensitiveToggle_Checked;
         }
 
         #region Data Model
@@ -120,8 +132,13 @@ namespace QPK_Keynote_Manager
             return $"{sheet.SheetNumber} - {sheet.Name}";
         }
 
+        private void CaseSensitiveToggle_Checked(object sender, RoutedEventArgs e)
+        {
+            // Store the state for use in search functions
+            isCaseSensitive = caseSensitiveToggle.IsChecked.GetValueOrDefault();
+        }
 
-        private string GetTypeComment(Element tElem)
+        private string GetTypeComment(Element tElem, string newText)
         {
             if (tElem == null) return string.Empty;
 
@@ -129,7 +146,8 @@ namespace QPK_Keynote_Manager
             if (p != null)
             {
                 string s = p.AsString();
-                if (!string.IsNullOrEmpty(s)) return s;
+                if (!string.IsNullOrEmpty(s) && CompareStrings(s, newText, isCaseSensitive))
+                    return s;
             }
 
             string[] names = { "Type Comments", "Comments", "Comment", "COMMENT" };
@@ -139,11 +157,18 @@ namespace QPK_Keynote_Manager
                 if (p != null)
                 {
                     string s = p.AsString();
-                    if (!string.IsNullOrEmpty(s)) return s;
+                    if (!string.IsNullOrEmpty(s) && CompareStrings(s, newText, isCaseSensitive))
+                        return s;
                 }
             }
 
             return string.Empty;
+        }
+
+
+        private bool CompareStrings(string str1, string str2, bool caseSensitive)
+        {
+            return caseSensitive ? str1 == str2 : str1.Equals(str2, StringComparison.OrdinalIgnoreCase);
         }
 
         internal bool SetTypeComment(Element tElem, string newText)
@@ -152,14 +177,23 @@ namespace QPK_Keynote_Manager
 
             Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
             if (p != null && !p.IsReadOnly)
-                return p.Set(newText);
+            {
+                // Here you may want to check the case-sensitive logic
+                if (!isCaseSensitive || p.AsString().Equals(newText, StringComparison.OrdinalIgnoreCase))
+                    return p.Set(newText);
+            }
 
+            // Check alternative parameters
             string[] names = { "Type Comments", "Comments", "Comment", "COMMENT" };
             foreach (string nm in names)
             {
                 p = tElem.LookupParameter(nm);
                 if (p != null && !p.IsReadOnly)
-                    return p.Set(newText);
+                {
+                    // Check for case-sensitivity before setting
+                    if (!isCaseSensitive || p.AsString().Equals(newText, StringComparison.OrdinalIgnoreCase))
+                        return p.Set(newText);
+                }
             }
 
             return false;
@@ -380,7 +414,7 @@ namespace QPK_Keynote_Manager
                     }
                     // --- end NUMBER lookup ---
 
-                    string oldComment = GetTypeComment(tElem);
+                    string oldComment = GetTypeComment(tElem, search);
                     if (string.IsNullOrEmpty(oldComment))
                         continue;
 
