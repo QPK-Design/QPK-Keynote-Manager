@@ -10,6 +10,7 @@
 
     <Window.Resources>
         <local:ScopeKindToVisibilityConverter x:Key="ScopeKindToVisibilityConverter"/>
+        <local:BindingProxy x:Key="VmProxy" Data="{Binding}"/>
 
         <SolidColorBrush x:Key="AccentBrush" Color="#ff8c69"/>
 
@@ -224,85 +225,83 @@
                                 Binding="{Binding Number}"
                                 Width=".4*">
                                 <DataGridTextColumn.Visibility>
-                                    <Binding Path="SelectedScope.Kind"
+                                    <Binding Source="{StaticResource VmProxy}"
+                                         Path="Data.SelectedScope.Kind"
                                          Converter="{StaticResource ScopeKindToVisibilityConverter}"
                                          ConverterParameter="Keynotes"/>
                                 </DataGridTextColumn.Visibility>
                             </DataGridTextColumn>
 
-                            <!-- FOUND TEXT (green highlight) -->
-                            <DataGridTemplateColumn Header="Found Text"
-                                                    Width="3*">
+                            <!-- Keynotes Found Text (green) -->
+                            <DataGridTemplateColumn Header="Found Text" Width="3*">
                                 <DataGridTemplateColumn.Visibility>
-                                    <Binding Path="SelectedScope.Kind"
+                                    <Binding Source="{StaticResource VmProxy}"
+                                         Path="Data.SelectedScope.Kind"
                                          Converter="{StaticResource ScopeKindToVisibilityConverter}"
                                          ConverterParameter="Keynotes"/>
                                 </DataGridTemplateColumn.Visibility>
 
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock TextWrapping="Wrap"
-                                                ToolTip="{Binding FullOldComment}">
+                                        <TextBlock TextWrapping="Wrap" ToolTip="{Binding FullOldComment}">
                                             <Run Text="{Binding FoundPrefix}" />
-                                            <Run Text="{Binding FoundWord}"
-                                                 Foreground="Green"
-                                                 FontWeight="Bold"/>
+                                            <Run Text="{Binding FoundWord}" Foreground="Green" FontWeight="Bold"/>
                                             <Run Text="{Binding FoundSuffix}" />
                                         </TextBlock>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-                            <!-- REPLACED TEXT (red highlight) -->
-                            <DataGridTemplateColumn Header="Replaced Text"
-                                Width="3*">
+                            <!-- Keynotes Replaced Text (red) -->
+                            <DataGridTemplateColumn Header="Replaced Text" Width="3*">
                                 <DataGridTemplateColumn.Visibility>
-                                    <Binding Path="SelectedScope.Kind"
+                                    <Binding Source="{StaticResource VmProxy}"
+                                         Path="Data.SelectedScope.Kind"
                                          Converter="{StaticResource ScopeKindToVisibilityConverter}"
                                          ConverterParameter="Keynotes"/>
                                 </DataGridTemplateColumn.Visibility>
 
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock TextWrapping="Wrap"
-                                                   ToolTip="{Binding FullNewComment}">
+                                        <TextBlock TextWrapping="Wrap" ToolTip="{Binding FullNewComment}">
                                             <Run Text="{Binding ReplPrefix}" />
-                                            <Run Text="{Binding ReplWord}"
-                                                 Foreground="Red"
-                                                 FontWeight="Bold"/>
+                                            <Run Text="{Binding ReplWord}" Foreground="Red" FontWeight="Bold"/>
                                             <Run Text="{Binding ReplSuffix}" />
                                         </TextBlock>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
-
                             <!-- ===================== SHEET NAMES ONLY ===================== -->
                             <DataGridTextColumn Header="Found Text"
-                                                Binding="{Binding FoundText}"
-                                                Width="3*">
+                                Binding="{Binding FoundText}"
+                                Width="3*">
                                 <DataGridTextColumn.Visibility>
-                                    <Binding Path="SelectedScope.Kind"
-                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
-                                             ConverterParameter="SheetNames"/>
+                                    <Binding Source="{StaticResource VmProxy}"
+                                         Path="Data.SelectedScope.Kind"
+                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                         ConverterParameter="SheetNames"/>
                                 </DataGridTextColumn.Visibility>
                             </DataGridTextColumn>
 
                             <DataGridTextColumn Header="Replaced Text"
-                                                Binding="{Binding ReplacedText}"
-                                                Width="3*">
+                                Binding="{Binding ReplacedText}"
+                                Width="3*">
                                 <DataGridTextColumn.Visibility>
-                                    <Binding Path="SelectedScope.Kind"
-                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
-                                             ConverterParameter="SheetNames"/>
+                                    <Binding Source="{StaticResource VmProxy}"
+                                         Path="Data.SelectedScope.Kind"
+                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                         ConverterParameter="SheetNames"/>
                                 </DataGridTextColumn.Visibility>
                             </DataGridTextColumn>
 
-                            <!-- ===================== COMMON (BOTH) ===================== -->
+                            <!-- ===================== COMMON ===================== -->
                             <DataGridTextColumn Header="Sheet"
-                                                Binding="{Binding Sheet}"
-                                                Width="2*"/>
+                                Binding="{Binding Sheet}"
+                                Width="2*"/>
+
                         </DataGrid.Columns>
+
                     </DataGrid>
                 </StackPanel>
             </Border>
