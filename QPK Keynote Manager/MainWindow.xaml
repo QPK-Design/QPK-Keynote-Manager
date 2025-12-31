@@ -5,10 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QPK_Keynote_Manager"
         mc:Ignorable="d"
-        Title="QPK Keynote Manager 12-09-2025" Height="800" Width="800">
+        Title="QPK Keynote Manager 12-09-2025"
+        Height="800" Width="800">
+
     <Window.Resources>
         <local:ScopeKindToVisibilityConverter x:Key="ScopeKindToVisibilityConverter"/>
+
         <SolidColorBrush x:Key="AccentBrush" Color="#ff8c69"/>
+
         <Style x:Key="HoverAccentButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="Black"/>
@@ -23,7 +27,8 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-        
+
+        <!-- You can remove this style later if you're no longer using ToggleButtons -->
         <Style x:Key="HoverAccentToggleButton" TargetType="ToggleButton">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="Black"/>
@@ -32,12 +37,10 @@
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Style.Triggers>
-                <!-- same hover behavior -->
                 <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
                     <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
                 </Trigger>
-                <!-- visual state when toggled on -->
                 <Trigger Property="IsChecked" Value="True">
                     <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
                     <Setter Property="Foreground" Value="White"/>
@@ -46,217 +49,248 @@
             </Style.Triggers>
         </Style>
     </Window.Resources>
-    <!-- Find / Replace + Results  test-->
-    <Grid Grid.Row="2" Margin="0,20,0,0">
+
+    <!-- Find / Replace + Results -->
+    <Grid Margin="0,20,0,0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*" />
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <!-- Find / Replace Card -->
+        <!-- ===================== Find / Replace Card ===================== -->
         <Grid Grid.Row="0" Margin="10,0,10,10">
             <Border Background="#fff"
-                BorderBrush="LightGray"
-                BorderThickness="2"
-                CornerRadius="8"
-                Padding="10"
-                HorizontalAlignment="Stretch"
-                Panel.ZIndex="0">
+                    BorderBrush="LightGray"
+                    BorderThickness="2"
+                    CornerRadius="8"
+                    Padding="10"
+                    HorizontalAlignment="Stretch"
+                    Panel.ZIndex="0">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Find String -->
                     <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,10,0">
                         <TextBlock Text="Find Text"
-                               FontWeight="Bold"
-                               Margin="5,0,0,5" />
+                                   FontWeight="Bold"
+                                   Margin="5,0,0,5"/>
                         <TextBox x:Name="FindTextBox"
-                             Text="{Binding FindText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             Height="30"
-                             BorderBrush="Gray"
-                             BorderThickness="1"
-                             Padding="5" />
+                                 Text="{Binding FindText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="30"
+                                 BorderBrush="Gray"
+                                 BorderThickness="1"
+                                 Padding="5"/>
                     </StackPanel>
 
                     <!-- Replace String -->
                     <StackPanel Grid.Row="0" Grid.Column="1">
                         <TextBlock Text="Replace With"
-                               FontWeight="Bold"
-                               Margin="5,0,0,5" />
+                                   FontWeight="Bold"
+                                   Margin="5,0,0,5"/>
                         <TextBox x:Name="ReplaceTextBox"
-                             Text="{Binding ReplaceText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                             Height="30"
-                             BorderBrush="Gray"
-                             BorderThickness="1"
-                             Padding="5" />
+                                 Text="{Binding ReplaceText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="30"
+                                 BorderBrush="Gray"
+                                 BorderThickness="1"
+                                 Padding="5"/>
                     </StackPanel>
-
-
 
                     <!-- Buttons + Scope Checkboxes -->
                     <StackPanel Grid.Row="1" Grid.ColumnSpan="2"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        Margin="0,10,0,0"
-                        VerticalAlignment="Center">
+                                Orientation="Horizontal"
+                                HorizontalAlignment="Right"
+                                Margin="0,10,0,0"
+                                VerticalAlignment="Center">
 
                         <CheckBox Content="Keynotes"
-                          IsChecked="{Binding IsKeynotesEnabled}"
-                          VerticalAlignment="Center"
-                          Margin="0,0,12,0"/>
+                                  IsChecked="{Binding IsKeynotesEnabled}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,12,0"/>
 
                         <CheckBox Content="Sheet Names"
-                          IsChecked="{Binding IsSheetNamesEnabled}"
-                          VerticalAlignment="Center"
-                          Margin="0,0,12,0"/>
+                                  IsChecked="{Binding IsSheetNamesEnabled}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,12,0"/>
 
                         <CheckBox Content="View Titles"
-                          IsChecked="{Binding IsViewTitlesEnabled}"
-                          VerticalAlignment="Center"
-                          Margin="0,0,12,0"/>
+                                  IsChecked="{Binding IsViewTitlesEnabled}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,12,0"/>
 
                         <CheckBox Content="Case Sensitive"
-                          IsChecked="{Binding IsCaseSensitive}"
-                          VerticalAlignment="Center"
-                          Margin="0,0,12,0"/>
+                                  IsChecked="{Binding IsCaseSensitive}"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,12,0"/>
 
                         <Button Content="Preview"
-                            Width="100" Height="30"
-                            Margin="0,0,0,0"
-                            Style="{StaticResource HoverAccentButton}"
-                            Click="PreviewFindReplace_Click"/>
+                                Width="100" Height="30"
+                                Style="{StaticResource HoverAccentButton}"
+                                Click="PreviewFindReplace_Click"/>
 
                         <Button Content="Replace Selected"
-                            Width="130" Height="30"
-                            Margin="5,0,0,0"
-                            Style="{StaticResource HoverAccentButton}"
-                            Click="ReplaceSelected_Click"/>
+                                Width="130" Height="30"
+                                Margin="5,0,0,0"
+                                Style="{StaticResource HoverAccentButton}"
+                                Click="ReplaceSelected_Click"/>
 
                         <Button Content="Replace All"
-                            Width="100" Height="30"
-                            Margin="5,0,0,0"
-                            Style="{StaticResource HoverAccentButton}"
-                            Click="ReplaceAll_Click"/>
+                                Width="100" Height="30"
+                                Margin="5,0,0,0"
+                                Style="{StaticResource HoverAccentButton}"
+                                Click="ReplaceAll_Click"/>
                     </StackPanel>
-
-
 
                 </Grid>
             </Border>
 
             <!-- Overlapping Label -->
             <TextBlock Text="Find &amp; Replace"
-                   FontWeight="Bold"
-                   FontSize="14"
-                   Background="White"
-                   Foreground="Black"
-                   Margin="20,-10,0,0"
-                   Padding="4,0"
-                   VerticalAlignment="Top"
-                   HorizontalAlignment="Left"
-                   Panel.ZIndex="1" />
+                       FontWeight="Bold"
+                       FontSize="14"
+                       Background="White"
+                       Foreground="Black"
+                       Margin="20,-10,0,0"
+                       Padding="4,0"
+                       VerticalAlignment="Top"
+                       HorizontalAlignment="Left"
+                       Panel.ZIndex="1"/>
         </Grid>
 
-        <!-- Results DataGrid Card -->
+        <!-- ===================== Results DataGrid Card ===================== -->
         <Grid Grid.Row="1" Margin="10,0,10,10">
             <Border Background="#fff"
-                BorderBrush="LightGray"
-                BorderThickness="2"
-                CornerRadius="8"
-                Padding="10"
-                HorizontalAlignment="Stretch"
-                Panel.ZIndex="0">
-                <DataGrid x:Name="ResultsDataGrid"
-                  ItemsSource="{Binding ReplaceResults}"
-                  AutoGenerateColumns="False"
-                  IsReadOnly="True"
-                  Grid.Row="1"
-                  Margin="5">
-                    <!-- Row style with IsApplied trigger -->
-                    <DataGrid.RowStyle>
-                        <Style TargetType="DataGridRow">
-                            <Setter Property="SnapsToDevicePixels" Value="True"/>
-                            <Setter Property="Padding" Value="2"/>
-                            <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                            <Setter Property="BorderBrush" Value="#FFE5E5E5"/>
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                    BorderBrush="LightGray"
+                    BorderThickness="2"
+                    CornerRadius="8"
+                    Padding="10"
+                    HorizontalAlignment="Stretch"
+                    Panel.ZIndex="0">
 
-                            <Style.Triggers>
-                                <!-- Visually indicate selection without killing our background -->
-                                <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="BorderBrush" Value="DarkGreen"/>
-                                    <Setter Property="BorderThickness" Value="1"/>
-                                </Trigger>
+                <!-- IMPORTANT: Border can only have ONE child -->
+                <StackPanel>
 
-                                <!-- Applied rows: light green background -->
-                                <DataTrigger Binding="{Binding IsApplied}" Value="True">
-                                    <Setter Property="Background" Value="#FFE0FFE0"/>
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </DataGrid.RowStyle>
+                    <!-- Scope dropdown -->
+                    <StackPanel Orientation="Horizontal" Margin="5,0,5,8" VerticalAlignment="Center">
+                        <TextBlock Text="Preview:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox Width="200"
+                                  ItemsSource="{Binding AvailableScopes}"
+                                  SelectedItem="{Binding SelectedScope}"
+                                  DisplayMemberPath="DisplayName"/>
+                    </StackPanel>
 
-                    <DataGrid.Columns>
-                        <!-- Number -->
-                        <DataGridTextColumn Header="No."
-                            Binding="{Binding Number}"
-                            Width=".4*" />
+                    <!-- Results grid -->
+                    <DataGrid x:Name="ResultsDataGrid"
+                              ItemsSource="{Binding CurrentResults}"
+                              SelectedItem="{Binding SelectedResult}"
+                              AutoGenerateColumns="False"
+                              IsReadOnly="True"
+                              Margin="5"
+                              CanUserAddRows="False">
 
-                        <!-- String Found -->
-                        <DataGridTemplateColumn Header="Found Text" Width="3*">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock TextWrapping="Wrap">
-                        <Run Text="{Binding FoundPrefix}" />
-                        <Run Text="{Binding FoundWord}" Foreground="Red" FontWeight="Bold" />
-                        <Run Text="{Binding FoundSuffix}" />
-                                    </TextBlock>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <!-- Row style -->
+                        <DataGrid.RowStyle>
+                            <Style TargetType="DataGridRow">
+                                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                                <Setter Property="Padding" Value="2"/>
+                                <Setter Property="BorderThickness" Value="0,0,0,1"/>
+                                <Setter Property="BorderBrush" Value="#FFE5E5E5"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
 
-                        <!-- String Replaced -->
-                        <DataGridTemplateColumn Header="Replaced Text" Width="3*">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <TextBlock TextWrapping="Wrap">
-                        <Run Text="{Binding ReplPrefix}" />
-                        <Run Text="{Binding ReplWord}" Foreground="Green" FontWeight="Bold" />
-                        <Run Text="{Binding ReplSuffix}" />
-                                    </TextBlock>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="BorderBrush" Value="DarkGreen"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
+                                    </Trigger>
 
-                        <!-- Sheet -->
-                        <DataGridTextColumn Header="Sheet"
-                            Binding="{Binding Sheet}"
-                            Width="2*" />
-                    </DataGrid.Columns>
-                </DataGrid>
+                                    <!-- Optional: only keep if your row models have IsApplied -->
+                                    <DataTrigger Binding="{Binding IsApplied}" Value="True">
+                                        <Setter Property="Background" Value="#FFE0FFE0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </DataGrid.RowStyle>
+
+                        <DataGrid.Columns>
+
+                            <!-- ===================== KEYNOTES ONLY ===================== -->
+                            <DataGridTextColumn Header="No."
+                                                Binding="{Binding Number}"
+                                                Width=".4*">
+                                <DataGridTextColumn.Visibility>
+                                    <Binding Path="SelectedScope.Kind"
+                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                             ConverterParameter="Keynotes"/>
+                                </DataGridTextColumn.Visibility>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="Found Text"
+                                                Binding="{Binding StringFound}"
+                                                Width="3*">
+                                <DataGridTextColumn.Visibility>
+                                    <Binding Path="SelectedScope.Kind"
+                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                             ConverterParameter="Keynotes"/>
+                                </DataGridTextColumn.Visibility>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="Replaced Text"
+                                                Binding="{Binding StringReplaced}"
+                                                Width="3*">
+                                <DataGridTextColumn.Visibility>
+                                    <Binding Path="SelectedScope.Kind"
+                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                             ConverterParameter="Keynotes"/>
+                                </DataGridTextColumn.Visibility>
+                            </DataGridTextColumn>
+
+                            <!-- ===================== SHEET NAMES ONLY ===================== -->
+                            <DataGridTextColumn Header="Found Text"
+                                                Binding="{Binding FoundText}"
+                                                Width="3*">
+                                <DataGridTextColumn.Visibility>
+                                    <Binding Path="SelectedScope.Kind"
+                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                             ConverterParameter="SheetNames"/>
+                                </DataGridTextColumn.Visibility>
+                            </DataGridTextColumn>
+
+                            <DataGridTextColumn Header="Replaced Text"
+                                                Binding="{Binding ReplacedText}"
+                                                Width="3*">
+                                <DataGridTextColumn.Visibility>
+                                    <Binding Path="SelectedScope.Kind"
+                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                             ConverterParameter="SheetNames"/>
+                                </DataGridTextColumn.Visibility>
+                            </DataGridTextColumn>
+
+                            <!-- ===================== COMMON (BOTH) ===================== -->
+                            <DataGridTextColumn Header="Sheet"
+                                                Binding="{Binding Sheet}"
+                                                Width="2*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
             </Border>
 
             <!-- Overlapping Label -->
             <TextBlock Text="Preview / Results"
-                   FontWeight="Bold"
-                   FontSize="14"
-                   Background="White"
-                   Foreground="Black"
-                   Margin="20,-10,0,0"
-                   Padding="4,0"
-                   VerticalAlignment="Top"
-                   HorizontalAlignment="Left"
-                   Panel.ZIndex="1" />
+                       FontWeight="Bold"
+                       FontSize="14"
+                       Background="White"
+                       Foreground="Black"
+                       Margin="20,-10,0,0"
+                       Padding="4,0"
+                       VerticalAlignment="Top"
+                       HorizontalAlignment="Left"
+                       Panel.ZIndex="1"/>
         </Grid>
     </Grid>
-
-
 </Window>
