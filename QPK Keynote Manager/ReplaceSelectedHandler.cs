@@ -134,67 +134,66 @@ namespace QPK_Keynote_Manager
             }
         }
 
-        private static void ApplySelectedKeynoteChange(Document doc, ReplaceResult row)
+        private void ApplySelectedKeynoteChange(Document doc, ReplaceResult row)
         {
+            if (row == null)
+            {
+                TaskDialog.Show("QPK Keynote Manager", "Select a keynote row first.");
+                return;
+            }
+
             // ✅ EARLY-OUT GUARD (runs once per click)
             if (row.IsApplied)
                 return;
 
-            if (row == null || row.TypeId == null || row.TypeId == ElementId.InvalidElementId)
-            {
-                TaskDialog.Show("QPK Keynote Manager", "Selected keynote row is missing a valid TypeId.");
-                return;
-            }
-            if (row == null || row.TypeId == null || row.TypeId == ElementId.InvalidElementId)
+            if (row.TypeId == null || row.TypeId == ElementId.InvalidElementId)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Selected keynote row is missing a valid TypeId.");
                 return;
             }
 
-            var typeElem = doc.GetElement(row.TypeId);
-            if (typeElem == null)
+            var tElem = doc.GetElement(row.TypeId);
+            if (tElem == null)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Could not find the Type element for the selected row.");
                 return;
             }
 
-            var p = TryGetTypeCommentsParam(typeElem);
-            if (p == null || p.IsReadOnly)
-            {
-                TaskDialog.Show("QPK Keynote Manager", "Type Comments parameter is missing or read-only.");
-                return;
-            }
-
-            var newComment = (row.FullNewComment ?? string.Empty).Trim();
-            if (string.IsNullOrWhiteSpace(newComment))
+            string newText = (row.FullNewComment ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(newText))
             {
                 TaskDialog.Show("QPK Keynote Manager", "Proposed comment is empty. Skipping.");
                 return;
             }
 
-            using (var tx = new Transaction(doc, "QPK Find & Replace — Keynote (Selected)"))
+            bool isCaseSensitive = _window?.VM?.IsCaseSensitive ?? false;
+
+            using (var tx = new Transaction(doc, "Replace Type Comment (Selected)"))
             {
                 tx.Start();
 
-                bool ok = p.Set(newComment);
+                bool ok = _window.SetTypeComment(tElem, newText, isCaseSensitive);
 
                 if (ok)
                 {
                     tx.Commit();
-                    row.IsApplied = true;  // ✅ mark row green
+                    row.IsApplied = true; // ✅ mark row green
+                    TaskDialog.Show("QPK Keynote Manager", "Updated Type Comments for selected keynote.");
                 }
                 else
                 {
                     tx.RollBack();
+                    TaskDialog.Show(
+                        "QPK Keynote Manager",
+                        "Failed to set Type Comments.\n\n" +
+                        "Possible reasons:\n" +
+                        "- Parameter is read-only\n" +
+                        "- Parameter not found (Type Comments / Comments)\n" +
+                        "- New text matches existing value");
                 }
-
-
-                TaskDialog.Show("QPK Keynote Manager",
-                    ok
-                        ? "Updated Type Comments for selected keynote."
-                        : "Failed to update Type Comments for selected keynote.");
             }
         }
+
 
         private static Parameter TryGetTypeCommentsParam(Element typeElem)
         {

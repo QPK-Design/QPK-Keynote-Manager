@@ -26,18 +26,17 @@ namespace QPK_Keynote_Manager
             VM = new MainViewModel(_uidoc);
             DataContext = VM;
 
-            // ExternalEvents (handlers should be in their own .cs files)
+            // ExternalEvents
             _replaceAllEvent = ExternalEvent.Create(new ReplaceAllHandler(this));
             _replaceSelectedEvent = ExternalEvent.Create(new ReplaceSelectedHandler(this));
 
-            // Optional: close cleanup
+            // Optional cleanup hook
             Closed += MainWindow_Closed;
         }
 
         private void MainWindow_Closed(object sender, EventArgs e)
         {
             // Nothing required here right now.
-            // If later you add modeless window tracking, do it here.
         }
 
         /// <summary>
@@ -46,6 +45,55 @@ namespace QPK_Keynote_Manager
         internal IReplaceRow GetSelectedRow()
         {
             return VM?.SelectedResult;
+        }
+
+        /// <summary>
+        /// Sets the type comment text (BuiltInParameter.ALL_MODEL_TYPE_COMMENTS first, then fallbacks).
+        /// Returns true if Revit parameter was successfully set; false if no-op or cannot set.
+        /// </summary>
+        internal bool SetTypeComment(Element tElem, string newText, bool isCaseSensitive)
+        {
+            if (tElem == null) return false;
+
+            newText ??= string.Empty;
+
+            // 1) Built-in Type Comments
+            Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+            if (p != null && !p.IsReadOnly)
+            {
+                string current = p.AsString() ?? string.Empty;
+
+                bool equal = isCaseSensitive
+                    ? current.Equals(newText, StringComparison.Ordinal)
+                    : current.Equals(newText, StringComparison.OrdinalIgnoreCase);
+
+                if (equal)
+                    return false; // no-op (already matches)
+
+                return p.Set(newText);
+            }
+
+            // 2) Fallback named parameters
+            string[] names = { "Type Comments", "Comments", "Comment", "COMMENT" };
+            foreach (string nm in names)
+            {
+                p = tElem.LookupParameter(nm);
+                if (p != null && !p.IsReadOnly)
+                {
+                    string current = p.AsString() ?? string.Empty;
+
+                    bool equal = isCaseSensitive
+                        ? current.Equals(newText, StringComparison.Ordinal)
+                        : current.Equals(newText, StringComparison.OrdinalIgnoreCase);
+
+                    if (equal)
+                        return false; // no-op
+
+                    return p.Set(newText);
+                }
+            }
+
+            return false;
         }
 
         private void PreviewFindReplace_Click(object sender, RoutedEventArgs e)
@@ -72,7 +120,6 @@ namespace QPK_Keynote_Manager
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                     break;
-
 
                 case FindReplaceScopeKind.ViewTitles:
                     TaskDialog.Show("QPK Keynote Manager",
