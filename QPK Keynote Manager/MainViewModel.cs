@@ -5,7 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using static QPK_Keynote_Manager.MainWindow;
+
 
 namespace QPK_Keynote_Manager
 {
@@ -88,8 +88,10 @@ namespace QPK_Keynote_Manager
         }
 
         // ---------------- Results per-scope ----------------
+
         public ObservableCollection<ReplaceResult> KeynoteResults { get; } =
             new ObservableCollection<ReplaceResult>();
+
 
         public ObservableCollection<SheetNameReplaceRow> SheetNameResults { get; } =
             new ObservableCollection<SheetNameReplaceRow>();
