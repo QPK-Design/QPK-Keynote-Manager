@@ -15,14 +15,6 @@ using System.Globalization;
 
 namespace QPK_Keynote_Manager
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// Features:
-    /// - Find & Replace with case sensitivity
-    /// - Spell Check with custom dictionary
-    /// - Accept/Ignore spelling suggestions
-    /// - Per-project custom word storage
-    /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private readonly UIDocument _uidoc;
@@ -31,6 +23,7 @@ namespace QPK_Keynote_Manager
         private readonly ExternalEvent _replaceAllEvent;
         private readonly ExternalEvent _replaceSelectedEvent;
         private readonly ExternalEvent _applySpellingEvent;
+        private readonly ExternalEvent _saveDictionaryEvent;
 
         public ObservableCollection<ReplaceResult> ReplaceResults { get; }
             = new ObservableCollection<ReplaceResult>();
@@ -40,6 +33,20 @@ namespace QPK_Keynote_Manager
 
         private HashSet<string> _customDictionary = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private HashSet<string> _englishDictionary = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        // New: technical terms moved to class-level so acceptance logic is consistent
+        private readonly HashSet<string> _technicalTerms = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "gypbd","conc","mtl","alum","galv","thk","wd","clg","qty",
+            "typ","min","max","dia","lbs","psf","psi","btu","hvac",
+            "mep","rcp","dwg","spec","nts","sim","approx","elev",
+            "dwgs","specs","mech","elec","arch","struct","dims",
+            "horiz","vert","nom","req","min","max","approx","dia",
+            "thru","w","ctrs","ea","incl","excl","cont","reinf",
+            "galv","alum","ss","ci","pvc","abs","cpvc","hdpe",
+            "epdm","tpo","sbs","gyp","clg","susp","acous","insul",
+            "vapor","retarder","dampproofing","waterproofing","cwp"
+        };
 
         public string FindText { get; set; }
         public string ReplaceText { get; set; }
@@ -98,6 +105,7 @@ namespace QPK_Keynote_Manager
             _replaceAllEvent = ExternalEvent.Create(new ReplaceAllHandler(this));
             _replaceSelectedEvent = ExternalEvent.Create(new ReplaceSelectedHandler(this));
             _applySpellingEvent = ExternalEvent.Create(new ApplySpellingHandler(this));
+            _saveDictionaryEvent = ExternalEvent.Create(new SaveDictionaryHandler(this));
 
             caseSensitiveToggle.Checked += CaseSensitiveToggle_Checked;
             caseSensitiveToggle.Unchecked += CaseSensitiveToggle_Checked;
@@ -150,7 +158,7 @@ namespace QPK_Keynote_Manager
             public string FullCorrectedComment { get; set; }
             public string MisspelledWord { get; set; }
             public ObservableCollection<string> Suggestions { get; set; } = new ObservableCollection<string>();
-
+            
             private string _selectedSuggestion;
             public string SelectedSuggestion
             {
@@ -212,7 +220,7 @@ namespace QPK_Keynote_Manager
             // Try to load dictionary from a text file
             // Place "dictionary.txt" in the same folder as your DLL
             // Or specify a full path
-
+            
             try
             {
                 string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
@@ -225,9 +233,9 @@ namespace QPK_Keynote_Manager
                     var words = System.IO.File.ReadAllLines(dictionaryPath)
                         .Where(line => !string.IsNullOrWhiteSpace(line))
                         .Select(line => line.Trim());
-
+                    
                     _englishDictionary = new HashSet<string>(words, StringComparer.OrdinalIgnoreCase);
-
+                    
                     StatusText.Text = $"Loaded {_englishDictionary.Count} words from dictionary";
                 }
                 else
@@ -295,31 +303,8 @@ namespace QPK_Keynote_Manager
 
         private void SaveCustomDictionary()
         {
-            try
-            {
-                using (var tx = new Transaction(_doc, "Save Custom Dictionary"))
-                {
-                    tx.Start();
-
-                    var param = _doc.ProjectInformation.LookupParameter("QPK_CustomDictionary");
-                    if (param == null)
-                    {
-                        // Try to create the parameter (this may fail if not set up in project)
-                        // In production, you'd want to ensure this shared parameter exists
-                    }
-                    else
-                    {
-                        string dictData = string.Join("|", _customDictionary);
-                        param.Set(dictData);
-                    }
-
-                    tx.Commit();
-                }
-            }
-            catch (Exception ex)
-            {
-                TaskDialog.Show("Custom Dictionary", $"Could not save custom dictionary: {ex.Message}");
-            }
+            // No longer needed - keeping for backwards compatibility if called elsewhere
+            // The actual save happens through SaveCustomDictionaryInternal via ExternalEvent
         }
 
         public void AddToCustomDictionary(string word)
@@ -327,7 +312,34 @@ namespace QPK_Keynote_Manager
             if (!string.IsNullOrWhiteSpace(word))
             {
                 _customDictionary.Add(word);
-                SaveCustomDictionary();
+                // Queue the save operation to run in Revit API context
+                _saveDictionaryEvent.Raise();
+            }
+        }
+
+        internal void SaveCustomDictionaryInternal()
+        {
+            // This runs inside ExternalEvent handler with proper API context
+            try
+            {
+                var param = _doc.ProjectInformation.LookupParameter("QPK_CustomDictionary");
+                if (param == null)
+                {
+                    StatusText.Dispatcher.Invoke(() =>
+                        StatusText.Text = "Note: Custom dictionary cannot be saved (parameter not found in project)");
+                }
+                else
+                {
+                    string dictData = string.Join("|", _customDictionary);
+                    param.Set(dictData);
+                    StatusText.Dispatcher.Invoke(() =>
+                        StatusText.Text = $"Custom dictionary saved ({_customDictionary.Count} words)");
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusText.Dispatcher.Invoke(() =>
+                    StatusText.Text = $"Could not save custom dictionary: {ex.Message}");
             }
         }
 
@@ -344,6 +356,9 @@ namespace QPK_Keynote_Manager
         {
             SpellingResults.Clear();
             CurrentSpellingIndex = -1;
+
+            // Debugging aid: show counts so you can confirm dictionary.txt loaded
+            StatusText.Text = $"Dictionary Sources: English Language({_englishDictionary.Count}), Custom Entries({_customDictionary.Count})";
 
             var seenTypeIds = new HashSet<ElementId>();
             int scheduleCount = 0;
@@ -448,80 +463,75 @@ namespace QPK_Keynote_Manager
             if (string.IsNullOrWhiteSpace(text))
                 return errors;
 
-            // Split text into words and check each
-            var words = System.Text.RegularExpressions.Regex.Split(text, @"\b");
+            // Split text into tokens (word boundaries)
+            var tokens = System.Text.RegularExpressions.Regex.Split(text, @"\b");
             int currentIndex = 0;
 
-            foreach (var word in words)
+            foreach (var token in tokens)
             {
-                if (!string.IsNullOrWhiteSpace(word) &&
-                    System.Text.RegularExpressions.Regex.IsMatch(word, @"^[a-zA-Z]+$"))
+                if (!string.IsNullOrWhiteSpace(token) &&
+                    System.Text.RegularExpressions.Regex.IsMatch(token, @"^[a-zA-Z]+$"))
                 {
-                    // Skip if in custom dictionary
-                    if (!IsInCustomDictionary(word))
+                    string word = token;
+
+                    // Centralized acceptance check: if NOT accepted, register as error
+                    if (!IsWordAccepted(word))
                     {
-                        // Check if word is misspelled
-                        if (!IsWordCorrect(word))
+                        var suggestions = GetSuggestions(word);
+                        errors.Add(new SpellingError
                         {
-                            var suggestions = GetSuggestions(word);
-                            errors.Add(new SpellingError
-                            {
-                                Word = word,
-                                StartIndex = currentIndex,
-                                Length = word.Length,
-                                Suggestions = suggestions
-                            });
-                        }
+                            Word = word,
+                            StartIndex = currentIndex,
+                            Length = word.Length,
+                            Suggestions = suggestions
+                        });
                     }
                 }
-                currentIndex += word.Length;
+
+                currentIndex += token.Length;
             }
 
             return errors;
         }
 
+        // New centralized acceptance method - replace scattered checks
+        private bool IsWordAccepted(string word)
+        {
+            if (string.IsNullOrEmpty(word))
+                return true;
+
+            // Custom dictionary overrides everything
+            if (_customDictionary.Contains(word))
+                return true;
+
+            // English dictionary
+            if (_englishDictionary.Contains(word))
+                return true;
+
+            // Short words are accepted (two letters or less)
+            if (word.Length <= 2)
+                return true;
+
+            // All-caps words (likely acronyms) accepted
+            if (word.Length >= 3 && word.All(char.IsUpper))
+                return true;
+
+            // Numeric codes
+            if (word.All(char.IsDigit))
+                return true;
+
+            // Technical/industry terms
+            if (_technicalTerms.Contains(word))
+                return true;
+
+            // Not accepted -> considered misspelled
+            return false;
+        }
+
+        // Optional: keep IsWordCorrect for backward compatibility (delegates to IsWordAccepted)
         private bool IsWordCorrect(string word)
         {
-            try
-            {
-                // Check if word is in English dictionary first
-                if (_englishDictionary.Contains(word))
-                    return true;
-
-                // Words that are all caps (3+ chars), all numbers, or very short might be acronyms/codes
-                if (word.Length <= 2)
-                    return true;
-
-                if (word.Length >= 3 && word.All(char.IsUpper))
-                    return true;
-
-                if (word.All(char.IsDigit))
-                    return true;
-
-                // Common construction/architectural abbreviations not in main dictionary
-                var technicalTerms = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "gypbd", "conc", "mtl", "alum", "galv", "thk", "wd", "clg", "qty",
-                    "typ", "min", "max", "dia", "lbs", "psf", "psi", "btu", "hvac",
-                    "mep", "rcp", "dwg", "spec", "nts", "sim", "approx", "elev",
-                    "dwgs", "specs", "mech", "elec", "arch", "struct", "dims",
-                    "horiz", "vert", "nom", "req", "min", "max", "approx", "dia",
-                    "thru", "w", "ctrs", "ea", "incl", "excl", "cont", "reinf",
-                    "galv", "alum", "ss", "ci", "pvc", "abs", "cpvc", "hdpe",
-                    "epdm", "tpo", "sbs", "gyp", "clg", "susp", "acous", "insul",
-                    "vapor", "retarder", "dampproofing", "waterproofing", "cwp"
-                };
-
-                if (technicalTerms.Contains(word))
-                    return true;
-
-                // If not found in any dictionary, it's potentially misspelled
-                return false;
-            }
-            catch
-            {
-                return true; // If we can't check, assume it's correct
-            }
+            return IsWordAccepted(word);
         }
 
         private List<string> GetSuggestions(string word)
@@ -529,7 +539,7 @@ namespace QPK_Keynote_Manager
             // In production, use a proper spell check library like NHunspell
             // For now, return some basic suggestions
             var suggestions = new List<string>();
-
+            
             // Add some common corrections
             var commonCorrections = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -1082,8 +1092,13 @@ namespace QPK_Keynote_Manager
             AddToCustomDictionary(current.MisspelledWord);
             current.IsIgnored = true;
 
-            MessageBox.Show($"Added '{current.MisspelledWord}' to custom dictionary.",
-                "Dictionary Updated", MessageBoxButton.OK, MessageBoxImage.Information);
+            MessageBox.Show(
+                $"Added '{current.MisspelledWord}' to this project's custom dictionary.\n\n" +
+                "This word will be accepted in this Revit project file.\n" +
+                "To use it in all projects, add it to dictionary.txt in the plugin folder.",
+                "Dictionary Updated", 
+                MessageBoxButton.OK, 
+                MessageBoxImage.Information);
 
             // Move to next error
             if (CurrentSpellingIndex < SpellingResults.Count - 1)
@@ -1097,7 +1112,68 @@ namespace QPK_Keynote_Manager
             _applySpellingEvent.Raise();
         }
 
+        private void ViewCustomDictionary_Click(object sender, RoutedEventArgs e)
+        {
+            if (_customDictionary.Count == 0)
+            {
+                MessageBox.Show(
+                    "No custom words have been added to this project yet.\n\n" +
+                    "Custom words are saved per-project when you click 'Add to Dictionary' during spell checking.",
+                    "Custom Dictionary",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+                return;
+            }
+
+            var words = _customDictionary.OrderBy(w => w).ToList();
+            string wordList = string.Join("\n", words);
+
+            var result = MessageBox.Show(
+                $"Custom Dictionary ({words.Count} words):\n\n{wordList}\n\n" +
+                "Would you like to export these words to add them to dictionary.txt?",
+                "Custom Dictionary",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Information);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                ExportCustomDictionary(words);
+            }
+        }
+
+        private void ExportCustomDictionary(List<string> words)
+        {
+            try
+            {
+                string assemblyPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
+                string assemblyDir = System.IO.Path.GetDirectoryName(assemblyPath);
+                string exportPath = System.IO.Path.Combine(assemblyDir, "custom_words_export.txt");
+
+                System.IO.File.WriteAllLines(exportPath, words);
+
+                MessageBox.Show(
+                    $"Custom words exported to:\n{exportPath}\n\n" +
+                    "You can now copy these words into your main dictionary.txt file.",
+                    "Export Complete",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Failed to export custom dictionary:\n{ex.Message}",
+                    "Export Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
+        }
+
         #endregion
+
+        private void caseSensitiveToggle_Checked_1(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 
     #region External Event Handlers
@@ -1238,7 +1314,7 @@ namespace QPK_Keynote_Manager
 
             Document doc = uidoc.Document;
             var results = _window.SpellingResults;
-
+            
             if (results == null || !results.Any())
             {
                 TaskDialog.Show("QPK Keynote Manager",
@@ -1295,6 +1371,37 @@ namespace QPK_Keynote_Manager
         public string GetName()
         {
             return "QPK Keynote Manager – Apply Spelling Corrections";
+        }
+    }
+
+    public class SaveDictionaryHandler : IExternalEventHandler
+    {
+        private readonly MainWindow _window;
+
+        public SaveDictionaryHandler(MainWindow window)
+        {
+            _window = window;
+        }
+
+        public void Execute(UIApplication app)
+        {
+            UIDocument uidoc = app.ActiveUIDocument;
+            if (uidoc == null)
+                return;
+
+            Document doc = uidoc.Document;
+
+            using (var tx = new Transaction(doc, "Save Custom Dictionary"))
+            {
+                tx.Start();
+                _window.SaveCustomDictionaryInternal();
+                tx.Commit();
+            }
+        }
+
+        public string GetName()
+        {
+            return "QPK Keynote Manager – Save Custom Dictionary";
         }
     }
 
