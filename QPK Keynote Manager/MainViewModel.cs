@@ -5,6 +5,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using System.Collections.Generic;
+using System.Text;
 
 
 namespace QPK_Keynote_Manager
@@ -196,6 +198,298 @@ namespace QPK_Keynote_Manager
 
             UpdateCurrentResults();
         }
+
+        public void PreviewKeynotes()
+        {
+            KeynoteResults.Clear();
+
+            string search = FindText ?? string.Empty;
+            string replace = ReplaceText ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(search))
+                return;
+
+            var seenTypeIds = new HashSet<ElementId>();
+            int matchCount = 0;
+
+            var schedules = new FilteredElementCollector(_doc)
+                .OfClass(typeof(ViewSchedule))
+                .Cast<ViewSchedule>()
+                .Where(vs => !vs.IsTemplate)
+                .ToList();
+
+            foreach (var vs in schedules)
+            {
+                if (!ScheduleShowsCommentField(vs))
+                    continue;
+
+                IEnumerable<Element> elems;
+                try
+                {
+                    elems = new FilteredElementCollector(_doc, vs.Id)
+                        .WhereElementIsNotElementType()
+                        .ToElements();
+                }
+                catch
+                {
+                    continue;
+                }
+
+                foreach (var elem in elems)
+                {
+                    if (elem == null) continue;
+
+                    ElementId typeId = elem.GetTypeId();
+                    if (typeId == ElementId.InvalidElementId) continue;
+                    if (seenTypeIds.Contains(typeId)) continue;
+
+                    var tElem = _doc.GetElement(typeId);
+                    if (tElem == null) continue;
+
+                    string oldComment = GetTypeComment(tElem);
+                    if (string.IsNullOrWhiteSpace(oldComment)) continue;
+                    if (!Contains(oldComment, search, IsCaseSensitive)) continue;
+
+                    string newComment = IsCaseSensitive
+                        ? oldComment.Replace(search, replace)
+                        : ReplaceIgnoreCase(oldComment, search, replace);
+
+                    if (string.Equals(newComment, oldComment, StringComparison.Ordinal))
+                        continue;
+
+                    // --- NEW: type NUMBER ---
+                    string typeNumber = GetTypeNumber(tElem);
+
+                    // --- NEW: element-based sheet ---
+                    string sheetForElem = GetSheetNameForElement(elem);
+
+                    // --- context strings for green/red UI ---
+                    BuildContextStrings(
+                        oldComment, search, replace, IsCaseSensitive,
+                        out string fPrefix, out string fWord, out string fSuffix,
+                        out string rPrefix, out string rWord, out string rSuffix);
+
+                    matchCount++;
+
+                    KeynoteResults.Add(new ReplaceResult
+                    {
+                        Number = typeNumber,
+                        TypeId = typeId,
+                        FullOldComment = oldComment,
+                        FullNewComment = newComment,
+
+                        FoundPrefix = fPrefix,
+                        FoundWord = fWord,
+                        FoundSuffix = fSuffix,
+
+                        ReplPrefix = rPrefix,
+                        ReplWord = rWord,
+                        ReplSuffix = rSuffix,
+
+                        Sheet = sheetForElem,
+                        ScheduleName = vs.Name
+                    });
+
+                    seenTypeIds.Add(typeId);
+                }
+            }
+
+            UpdateCurrentResults();
+        }
+
+
+        private static bool Contains(string haystack, string needle, bool caseSensitive)
+        {
+            if (string.IsNullOrEmpty(haystack) || string.IsNullOrEmpty(needle)) return false;
+            return haystack.IndexOf(needle, caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string GetTypeComment(Element tElem)
+        {
+            if (tElem == null) return string.Empty;
+
+            Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+            if (p != null)
+            {
+                string s = p.AsString();
+                if (!string.IsNullOrEmpty(s)) return s;
+            }
+
+            string[] names = { "Type Comments", "Comments", "Comment", "COMMENT" };
+            foreach (string nm in names)
+            {
+                p = tElem.LookupParameter(nm);
+                if (p != null)
+                {
+                    string s = p.AsString();
+                    if (!string.IsNullOrEmpty(s)) return s;
+                }
+            }
+
+            return string.Empty;
+        }
+
+        private bool ScheduleShowsCommentField(ViewSchedule vs)
+        {
+            try
+            {
+                var def = vs.Definition;
+                for (int i = 0; i < def.GetFieldCount(); i++)
+                {
+                    var f = def.GetField(i);
+                    string name = f.GetName();
+                    if (!string.IsNullOrEmpty(name) &&
+                        (name.Equals("Comment", StringComparison.OrdinalIgnoreCase) ||
+                         name.Equals("Comments", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        return true;
+                    }
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private static string GetTypeNumber(Element tElem)
+        {
+            if (tElem == null) return string.Empty;
+
+            Parameter numParam =
+                tElem.LookupParameter("NUMBER")
+                ?? tElem.LookupParameter("Number")
+                ?? tElem.LookupParameter("number");
+
+            if (numParam == null) return string.Empty;
+
+            try
+            {
+                if (numParam.StorageType == StorageType.String)
+                    return numParam.AsString() ?? string.Empty;
+
+                return numParam.AsValueString() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        private string GetSheetNameForElement(Element elem)
+        {
+            if (elem == null)
+                return "Not on a Sheet";
+
+            ElementId ownerViewId = elem.OwnerViewId;
+            if (ownerViewId == null || ownerViewId == ElementId.InvalidElementId)
+                return "Not on a Sheet";
+
+            var ownerView = _doc.GetElement(ownerViewId) as View;
+            if (ownerView == null)
+                return "Not on a Sheet";
+
+            var viewport = new FilteredElementCollector(_doc)
+                .OfClass(typeof(Viewport))
+                .Cast<Viewport>()
+                .FirstOrDefault(vp => vp.ViewId == ownerView.Id);
+
+            if (viewport == null)
+                return "Not on a Sheet";
+
+            var sheet = _doc.GetElement(viewport.SheetId) as ViewSheet;
+            if (sheet == null)
+                return "Not on a Sheet";
+
+            return $"{sheet.SheetNumber} - {sheet.Name}";
+        }
+
+        private string GetSheetNameForSchedule(ViewSchedule vs)
+        {
+            try
+            {
+                var vp = new FilteredElementCollector(_doc)
+                    .OfClass(typeof(Viewport))
+                    .Cast<Viewport>()
+                    .FirstOrDefault(x => x.ViewId == vs.Id);
+
+                if (vp == null) return string.Empty;
+
+                var sheet = _doc.GetElement(vp.SheetId) as ViewSheet;
+                if (sheet == null) return string.Empty;
+
+                return $"{sheet.SheetNumber} - {sheet.Name}";
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Builds small context around the FIRST word-token match of search (2 tokens before/after).
+        /// If no clean token match is found, falls back to entire string in prefix.
+        /// </summary>
+        private static void BuildContextStrings(
+            string fullOld,
+            string search,
+            string replace,
+            bool caseSensitive,
+            out string foundPrefix,
+            out string foundWord,
+            out string foundSuffix,
+            out string replPrefix,
+            out string replWord,
+            out string replSuffix)
+        {
+            foundPrefix = foundWord = foundSuffix = string.Empty;
+            replPrefix = replWord = replSuffix = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(fullOld) || string.IsNullOrEmpty(search))
+                return;
+
+            var tokens = fullOld
+                .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .ToArray();
+
+            if (tokens.Length == 0) return;
+
+            var cmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            int hitIndex = -1;
+            for (int i = 0; i < tokens.Length; i++)
+            {
+                string core = tokens[i].Trim(',', '.', ';', ':', '!', '?');
+                if (string.Equals(core, search, cmp))
+                {
+                    hitIndex = i;
+                    break;
+                }
+            }
+
+            if (hitIndex == -1)
+            {
+                // fallback: show whole string; color word won’t be perfect, but preview still works
+                foundPrefix = fullOld;
+                replPrefix = caseSensitive ? fullOld.Replace(search, replace) : ReplaceIgnoreCase(fullOld, search, replace);
+                replWord = string.Empty;
+                return;
+            }
+
+            int start = Math.Max(hitIndex - 2, 0);
+            int end = Math.Min(hitIndex + 2, tokens.Length - 1);
+
+            var beforeTokens = tokens.Skip(start).Take(hitIndex - start).ToArray();
+            var afterTokens = tokens.Skip(hitIndex + 1).Take(end - hitIndex).ToArray();
+
+            foundPrefix = beforeTokens.Length > 0 ? string.Join(" ", beforeTokens) + " " : string.Empty;
+            foundWord = tokens[hitIndex];
+            foundSuffix = afterTokens.Length > 0 ? " " + string.Join(" ", afterTokens) : string.Empty;
+
+            replPrefix = foundPrefix;
+            replWord = replace;          // this is what will be red
+            replSuffix = foundSuffix;
+        }
+
+
 
         private static string ReplaceIgnoreCase(string input, string oldValue, string newValue)
         {

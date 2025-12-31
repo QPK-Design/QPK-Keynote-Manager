@@ -65,10 +65,14 @@ namespace QPK_Keynote_Manager
                     break;
 
                 case FindReplaceScopeKind.Keynotes:
-                    // If you haven’t migrated Keynotes preview into the VM yet, keep this message for now.
-                    TaskDialog.Show("QPK Keynote Manager",
-                        "Keynotes preview is not wired yet in this step.\n\n(Preview Sheet Names is working.)");
+                    VM.PreviewKeynotes();
+                    MessageBox.Show(
+                        $"Scanned schedules and found {VM.KeynoteResults.Count} keynote comment(s) to change.",
+                        "Preview Complete",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
                     break;
+
 
                 case FindReplaceScopeKind.ViewTitles:
                     TaskDialog.Show("QPK Keynote Manager",

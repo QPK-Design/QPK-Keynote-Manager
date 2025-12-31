@@ -4,21 +4,35 @@ namespace QPK_Keynote_Manager
 {
     /// <summary>
     /// Result row for Keynotes find/replace preview.
-    /// (Minimal implementation for MVVM + DataGrid binding, expandable later.)
+    /// Supports word-level coloring via FoundPrefix/FoundWord/FoundSuffix + ReplPrefix/ReplWord/ReplSuffix.
     /// </summary>
     public class ReplaceResult : IReplaceRow
     {
-        // Keynotes-only column (shown when scope = Keynotes)
-        public int Number { get; set; }
+        // Keynotes-only column (optional; show/hide via scope)
+        public string Number { get; set; }
 
-        // Common columns
-        public string Sheet { get; set; }                 // required by IReplaceRow
-        public string StringFound { get; set; }
-        public string StringReplaced { get; set; }
+        // Required by IReplaceRow
+        public string Sheet { get; set; }
 
-        // Optional metadata (useful later for applying changes)
-        public ElementId ElementId { get; set; }          // instance id or schedule row id
-        public ElementId TypeId { get; set; }             // type id if needed
-        public string Notes { get; set; }                 // optional debug/status
+        // Useful metadata
+        public string ScheduleName { get; set; }
+        public ElementId TypeId { get; set; }
+
+        // Full text used for applying change (Revit parameter update)
+        public string FullOldComment { get; set; }
+        public string FullNewComment { get; set; }
+
+        // Context pieces for UI coloring
+        public string FoundPrefix { get; set; }
+        public string FoundWord { get; set; }
+        public string FoundSuffix { get; set; }
+
+        public string ReplPrefix { get; set; }
+        public string ReplWord { get; set; }
+        public string ReplSuffix { get; set; }
+
+        // Convenience strings
+        public string StringFound => string.Concat(FoundPrefix, FoundWord, FoundSuffix);
+        public string StringReplaced => string.Concat(ReplPrefix, ReplWord, ReplSuffix);
     }
 }

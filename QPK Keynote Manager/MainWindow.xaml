@@ -221,34 +221,59 @@
 
                             <!-- ===================== KEYNOTES ONLY ===================== -->
                             <DataGridTextColumn Header="No."
-                                                Binding="{Binding Number}"
-                                                Width=".4*">
+                                Binding="{Binding Number}"
+                                Width=".4*">
                                 <DataGridTextColumn.Visibility>
                                     <Binding Path="SelectedScope.Kind"
-                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
-                                             ConverterParameter="Keynotes"/>
+                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                         ConverterParameter="Keynotes"/>
                                 </DataGridTextColumn.Visibility>
                             </DataGridTextColumn>
 
-                            <DataGridTextColumn Header="Found Text"
-                                                Binding="{Binding StringFound}"
-                                                Width="3*">
-                                <DataGridTextColumn.Visibility>
+                            <!-- FOUND TEXT (green highlight) -->
+                            <DataGridTemplateColumn Header="Found Text"
+                                                    Width="3*">
+                                <DataGridTemplateColumn.Visibility>
                                     <Binding Path="SelectedScope.Kind"
-                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
-                                             ConverterParameter="Keynotes"/>
-                                </DataGridTextColumn.Visibility>
-                            </DataGridTextColumn>
+                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                         ConverterParameter="Keynotes"/>
+                                </DataGridTemplateColumn.Visibility>
 
-                            <DataGridTextColumn Header="Replaced Text"
-                                                Binding="{Binding StringReplaced}"
-                                                Width="3*">
-                                <DataGridTextColumn.Visibility>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextWrapping="Wrap">
+                                            <Run Text="{Binding FoundPrefix}" />
+                                            <Run Text="{Binding FoundWord}"
+                                                 Foreground="Green"
+                                                 FontWeight="Bold"/>
+                                            <Run Text="{Binding FoundSuffix}" />
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- REPLACED TEXT (red highlight) -->
+                            <DataGridTemplateColumn Header="Replaced Text"
+                        Width="3*">
+                                <DataGridTemplateColumn.Visibility>
                                     <Binding Path="SelectedScope.Kind"
-                                             Converter="{StaticResource ScopeKindToVisibilityConverter}"
-                                             ConverterParameter="Keynotes"/>
-                                </DataGridTextColumn.Visibility>
-                            </DataGridTextColumn>
+                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                         ConverterParameter="Keynotes"/>
+                                </DataGridTemplateColumn.Visibility>
+
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextWrapping="Wrap">
+                                            <Run Text="{Binding ReplPrefix}" />
+                                            <Run Text="{Binding ReplWord}"
+                                                 Foreground="Red"
+                                                 FontWeight="Bold"/>
+                                            <Run Text="{Binding ReplSuffix}" />
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
 
                             <!-- ===================== SHEET NAMES ONLY ===================== -->
                             <DataGridTextColumn Header="Found Text"
