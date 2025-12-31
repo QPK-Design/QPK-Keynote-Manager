@@ -75,6 +75,16 @@ namespace QPK_Keynote_Manager
 
         private static void ApplySelectedSheetNameChange(Document doc, SheetNameReplaceRow row)
         {
+            // ✅ EARLY-OUT GUARD (runs once per click)
+            if (row.IsApplied)
+                return;
+
+            if (row == null || row.SheetId == null || row.SheetId == ElementId.InvalidElementId)
+            {
+                TaskDialog.Show("QPK Keynote Manager", "Selected row is missing a valid SheetId.");
+                return;
+            }
+
             if (row == null || row.SheetId == null || row.SheetId == ElementId.InvalidElementId)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Selected row is missing a valid SheetId.");
@@ -106,8 +116,16 @@ namespace QPK_Keynote_Manager
             {
                 tx.Start();
                 bool ok = p.Set(newName);
-                if (ok) tx.Commit();
-                else tx.RollBack();
+                if (ok)
+                {
+                    tx.Commit();
+                    row.IsApplied = true;  // ✅ mark row green
+                }
+                else
+                {
+                    tx.RollBack();
+                }
+
 
                 TaskDialog.Show("QPK Keynote Manager",
                     ok
@@ -118,6 +136,15 @@ namespace QPK_Keynote_Manager
 
         private static void ApplySelectedKeynoteChange(Document doc, ReplaceResult row)
         {
+            // ✅ EARLY-OUT GUARD (runs once per click)
+            if (row.IsApplied)
+                return;
+
+            if (row == null || row.TypeId == null || row.TypeId == ElementId.InvalidElementId)
+            {
+                TaskDialog.Show("QPK Keynote Manager", "Selected keynote row is missing a valid TypeId.");
+                return;
+            }
             if (row == null || row.TypeId == null || row.TypeId == ElementId.InvalidElementId)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Selected keynote row is missing a valid TypeId.");
@@ -151,8 +178,16 @@ namespace QPK_Keynote_Manager
 
                 bool ok = p.Set(newComment);
 
-                if (ok) tx.Commit();
-                else tx.RollBack();
+                if (ok)
+                {
+                    tx.Commit();
+                    row.IsApplied = true;  // ✅ mark row green
+                }
+                else
+                {
+                    tx.RollBack();
+                }
+
 
                 TaskDialog.Show("QPK Keynote Manager",
                     ok

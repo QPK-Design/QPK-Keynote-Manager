@@ -78,6 +78,8 @@ namespace QPK_Keynote_Manager
 
                 foreach (var row in vm.SheetNameResults.ToList())
                 {
+                    if (row.IsApplied)
+                        continue;   // ✅ skip already-applied rows
                     if (row == null || row.SheetId == null || row.SheetId == ElementId.InvalidElementId)
                     {
                         failed++;
@@ -109,8 +111,16 @@ namespace QPK_Keynote_Manager
                         continue;
 
                     bool ok = p.Set(newName);
-                    if (ok) changed++;
-                    else failed++;
+                    if (ok)
+                    {
+                        changed++;
+                        row.IsApplied = true;  // ✅ mark row green
+                    }
+                    else
+                    {
+                        failed++;
+                    }
+
                 }
 
                 tx.Commit();
@@ -166,8 +176,15 @@ namespace QPK_Keynote_Manager
                     }
 
                     bool ok = p.Set(newComment);
-                    if (ok) changed++;
-                    else failed++;
+                    if (ok)
+                    {
+                        changed++;
+                        row.IsApplied = true;  // ✅ mark row green
+                    }
+                    else
+                    {
+                        failed++;
+                    }
                 }
 
                 tx.Commit();
