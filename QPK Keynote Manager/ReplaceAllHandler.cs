@@ -42,8 +42,7 @@ namespace QPK_Keynote_Manager
                         break;
 
                     case FindReplaceScopeKind.Keynotes:
-                        TaskDialog.Show("QPK Keynote Manager",
-                            "Replace All for Keynotes is not wired yet in this step.");
+                        ApplyAllKeynoteChanges(doc, vm);
                         break;
 
                     case FindReplaceScopeKind.ViewTitles:
@@ -106,24 +105,90 @@ namespace QPK_Keynote_Manager
                         continue;
                     }
 
-                    // Avoid unnecessary sets
                     if (string.Equals(sheet.Name ?? string.Empty, newName, StringComparison.Ordinal))
                         continue;
 
-                    var setResult = p.Set(newName);
-                    if (setResult)
-                        changed++;
-                    else
-                        failed++;
+                    bool ok = p.Set(newName);
+                    if (ok) changed++;
+                    else failed++;
                 }
 
                 tx.Commit();
             }
 
             TaskDialog.Show("QPK Keynote Manager",
-                $"Sheet Names — Replace All complete.\n\n" +
-                $"Changed: {changed}\n" +
-                $"Failed/Skipped: {failed}");
+                $"Sheet Names — Replace All complete.\n\nChanged: {changed}\nFailed/Skipped: {failed}");
+        }
+
+        private static void ApplyAllKeynoteChanges(Document doc, MainViewModel vm)
+        {
+            if (vm.KeynoteResults == null || vm.KeynoteResults.Count == 0)
+            {
+                TaskDialog.Show("QPK Keynote Manager", "No keynote changes to apply. Run Preview first.");
+                return;
+            }
+
+            int changed = 0;
+            int failed = 0;
+
+            using (var tx = new Transaction(doc, "QPK Find & Replace — Keynotes (All)"))
+            {
+                tx.Start();
+
+                foreach (var rowObj in vm.KeynoteResults.ToList())
+                {
+                    var row = rowObj as ReplaceResult;
+                    if (row == null || row.TypeId == null || row.TypeId == ElementId.InvalidElementId)
+                    {
+                        failed++;
+                        continue;
+                    }
+
+                    var typeElem = doc.GetElement(row.TypeId);
+                    if (typeElem == null)
+                    {
+                        failed++;
+                        continue;
+                    }
+
+                    var p = TryGetTypeCommentsParam(typeElem);
+                    if (p == null || p.IsReadOnly)
+                    {
+                        failed++;
+                        continue;
+                    }
+
+                    var newComment = (row.FullNewComment ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(newComment))
+                    {
+                        failed++;
+                        continue;
+                    }
+
+                    bool ok = p.Set(newComment);
+                    if (ok) changed++;
+                    else failed++;
+                }
+
+                tx.Commit();
+            }
+
+            TaskDialog.Show("QPK Keynote Manager",
+                $"Keynotes — Replace All complete.\n\nChanged: {changed}\nFailed/Skipped: {failed}");
+        }
+
+        private static Parameter TryGetTypeCommentsParam(Element typeElem)
+        {
+            if (typeElem == null) return null;
+
+            var p = typeElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+            if (p != null) return p;
+
+            p = typeElem.LookupParameter("Type Comments")
+                ?? typeElem.LookupParameter("Comments")
+                ?? typeElem.LookupParameter("Comment");
+
+            return p;
         }
 
         public string GetName()

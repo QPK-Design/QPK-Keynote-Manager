@@ -241,7 +241,8 @@
 
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock TextWrapping="Wrap">
+                                        <TextBlock TextWrapping="Wrap"
+                                                ToolTip="{Binding FullOldComment}">
                                             <Run Text="{Binding FoundPrefix}" />
                                             <Run Text="{Binding FoundWord}"
                                                  Foreground="Green"
@@ -254,7 +255,7 @@
 
                             <!-- REPLACED TEXT (red highlight) -->
                             <DataGridTemplateColumn Header="Replaced Text"
-                        Width="3*">
+                                Width="3*">
                                 <DataGridTemplateColumn.Visibility>
                                     <Binding Path="SelectedScope.Kind"
                                          Converter="{StaticResource ScopeKindToVisibilityConverter}"
@@ -263,7 +264,8 @@
 
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock TextWrapping="Wrap">
+                                        <TextBlock TextWrapping="Wrap"
+                                                   ToolTip="{Binding FullNewComment}">
                                             <Run Text="{Binding ReplPrefix}" />
                                             <Run Text="{Binding ReplWord}"
                                                  Foreground="Red"
