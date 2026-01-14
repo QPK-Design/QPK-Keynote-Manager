@@ -228,16 +228,15 @@
                         </DataGrid.RowStyle>
 
                         <DataGrid.Columns>
-
                             <!-- ===================== KEYNOTES ONLY ===================== -->
                             <DataGridTextColumn Header="No."
-                                Binding="{Binding Number}"
-                                Width=".4*">
+    Binding="{Binding Number}"
+    Width=".4*">
                                 <DataGridTextColumn.Visibility>
                                     <Binding Source="{StaticResource VmProxy}"
-                                         Path="Data.SelectedScope.Kind"
-                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
-                                         ConverterParameter="Keynotes"/>
+             Path="Data.SelectedScope.Kind"
+             Converter="{StaticResource ScopeKindToVisibilityConverter}"
+             ConverterParameter="Keynotes"/>
                                 </DataGridTextColumn.Visibility>
                             </DataGridTextColumn>
 
@@ -245,17 +244,15 @@
                             <DataGridTemplateColumn Header="Found Text" Width="3*">
                                 <DataGridTemplateColumn.Visibility>
                                     <Binding Source="{StaticResource VmProxy}"
-                                         Path="Data.SelectedScope.Kind"
-                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
-                                         ConverterParameter="Keynotes"/>
+             Path="Data.SelectedScope.Kind"
+             Converter="{StaticResource ScopeKindToVisibilityConverter}"
+             ConverterParameter="Keynotes"/>
                                 </DataGridTemplateColumn.Visibility>
 
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock TextWrapping="Wrap" ToolTip="{Binding FullOldComment}">
-                                            <Run Text="{Binding FoundPrefix}" />
-                                            <Run Text="{Binding FoundWord}" Foreground="Green" FontWeight="Bold"/>
-                                            <Run Text="{Binding FoundSuffix}" />
+                                            <TextBlock.Inlines><Run Text="{Binding FoundPreText}"/><Run Text="{Binding FoundWordLeft}"/><Run Text="{Binding FoundWordMid}" Foreground="Green" FontWeight="Bold"/><Run Text="{Binding FoundWordRight}"/><Run Text="{Binding FoundPostText}"/></TextBlock.Inlines>
                                         </TextBlock>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -269,13 +266,11 @@
                                          Converter="{StaticResource ScopeKindToVisibilityConverter}"
                                          ConverterParameter="Keynotes"/>
                                 </DataGridTemplateColumn.Visibility>
-
+                                <!-- ===================== FOR SOME REASON THIS INLINES RUN HAS TO BE ON ONE LINE OR EXTRA SPACES ARE ADDED. KEEP AS IS OR IT BREAKS ===================== -->
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock TextWrapping="Wrap" ToolTip="{Binding FullNewComment}">
-                                            <Run Text="{Binding ReplPrefix}" />
-                                            <Run Text="{Binding ReplWord}" Foreground="Red" FontWeight="Bold"/>
-                                            <Run Text="{Binding ReplSuffix}" />
+                                            <TextBlock.Inlines><Run Text="{Binding ReplPreText}"/><Run Text="{Binding ReplWordLeft}"/><Run Text="{Binding ReplWordMid}" Foreground="Red" FontWeight="Bold"/><Run Text="{Binding ReplWordRight}"/><Run Text="{Binding ReplPostText}"/></TextBlock.Inlines>
                                         </TextBlock>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -293,11 +288,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock TextWrapping="Wrap" ToolTip="{Binding FoundText}">
-                                            <Run Text="{Binding FoundPreText}" />
-                                            <Run Text="{Binding FoundWordLeft}" Foreground="Gray"/>
-                                            <Run Text="{Binding FoundWordMid}" Foreground="Green" FontWeight="Bold"/>
-                                            <Run Text="{Binding FoundWordRight}" Foreground="Gray"/>
-                                            <Run Text="{Binding FoundPostText}" />
+                                            <TextBlock.Inlines><Run Text="{Binding FoundPreText}"/><Run Text="{Binding FoundWordLeft}"/><Run Text="{Binding FoundWordMid}" Foreground="Green" FontWeight="Bold"/><Run Text="{Binding FoundWordRight}"/><Run Text="{Binding FoundPostText}"/></TextBlock.Inlines>
                                         </TextBlock>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -314,15 +305,15 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <TextBlock TextWrapping="Wrap" ToolTip="{Binding ReplacedText}">
-                                            <Run Text="{Binding ReplPreText}" />
-                                            <Run Text="{Binding ReplWordLeft}" Foreground="Gray"/>
-                                            <Run Text="{Binding ReplWordMid}" Foreground="Red" FontWeight="Bold"/>
-                                            <Run Text="{Binding ReplWordRight}" Foreground="Gray"/>
-                                            <Run Text="{Binding ReplPostText}" />
+                                            <TextBlock.Inlines><Run Text="{Binding ReplPreText}"/><Run Text="{Binding ReplWordLeft}"/><Run Text="{Binding ReplWordMid}" Foreground="Red" FontWeight="Bold"/><Run Text="{Binding ReplWordRight}"/><Run Text="{Binding ReplPostText}"/></TextBlock.Inlines>
                                         </TextBlock>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
+
+
+
+
 
                             <!-- ===================== COMMON ===================== -->
                             <DataGridTextColumn Header="Sheet"

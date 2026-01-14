@@ -286,10 +286,10 @@ namespace QPK_Keynote_Manager
                     string sheetForElem = GetSheetNameForElement(elem);
 
                     // --- context strings for green/red UI ---
-                    BuildContextStrings(
+                    BuildWordAwareContextStrings(
                         oldComment, search, replace, IsCaseSensitive,
-                        out string fPrefix, out string fWord, out string fSuffix,
-                        out string rPrefix, out string rWord, out string rSuffix);
+                        out var fPre, out var fLeft, out var fMid, out var fRight, out var fPost,
+                        out var rPre, out var rLeft, out var rMid, out var rRight, out var rPost);
 
                     matchCount++;
 
@@ -300,13 +300,18 @@ namespace QPK_Keynote_Manager
                         FullOldComment = oldComment,
                         FullNewComment = newComment,
 
-                        FoundPrefix = fPrefix,
-                        FoundWord = fWord,
-                        FoundSuffix = fSuffix,
+                        // NEW word-aware bindings
+                        FoundPreText = fPre,
+                        FoundWordLeft = fLeft,
+                        FoundWordMid = fMid,
+                        FoundWordRight = fRight,
+                        FoundPostText = fPost,
 
-                        ReplPrefix = rPrefix,
-                        ReplWord = rWord,
-                        ReplSuffix = rSuffix,
+                        ReplPreText = rPre,
+                        ReplWordLeft = rLeft,
+                        ReplWordMid = rMid,
+                        ReplWordRight = rRight,
+                        ReplPostText = rPost,
 
                         Sheet = sheetForElem,
                         ScheduleName = vs.Name
