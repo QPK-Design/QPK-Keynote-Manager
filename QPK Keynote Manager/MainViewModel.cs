@@ -158,7 +158,7 @@ namespace QPK_Keynote_Manager
         {
             SheetNameResults.Clear();
 
-            string search = FindText ?? string.Empty;
+            string search = (FindText ?? string.Empty).Trim();
             string replace = ReplaceText ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(search))
@@ -174,6 +174,7 @@ namespace QPK_Keynote_Manager
             foreach (var sheet in sheets)
             {
                 string oldName = sheet.Name ?? string.Empty;
+
                 if (oldName.IndexOf(search, comparison) < 0)
                     continue;
 
@@ -186,13 +187,34 @@ namespace QPK_Keynote_Manager
                 if (string.IsNullOrWhiteSpace(newName) || string.Equals(newName, oldName, comparison))
                     continue;
 
+                // --- context strings for green/red UI (match keynote UX) ---
+                BuildWordAwareContextStrings(
+                    oldName, search, replace, IsCaseSensitive,
+                    out var fPre, out var fLeft, out var fMid, out var fRight, out var fPost,
+                    out var rPre, out var rLeft, out var rMid, out var rRight, out var rPost);
+
                 SheetNameResults.Add(new SheetNameReplaceRow
                 {
                     SheetId = sheet.Id,
                     SheetNumber = sheet.SheetNumber,
                     Sheet = $"{sheet.SheetNumber} - {oldName}",
+
                     FoundText = oldName,
-                    ReplacedText = newName
+                    ReplacedText = newName,
+
+                    // NEW: Found segments
+                    FoundPreText = fPre,
+                    FoundWordLeft = fLeft,
+                    FoundWordMid = fMid,
+                    FoundWordRight = fRight,
+                    FoundPostText = fPost,
+
+                    // NEW: Replaced segments
+                    ReplPreText = rPre,
+                    ReplWordLeft = rLeft,
+                    ReplWordMid = rMid,
+                    ReplWordRight = rRight,
+                    ReplPostText = rPost
                 });
             }
 
@@ -297,12 +319,83 @@ namespace QPK_Keynote_Manager
             UpdateCurrentResults();
         }
 
+        private static bool IsWordChar(char c)
+        {
+            // Treat letters/digits/_ as word characters
+            // (This works great for LIGHTING, DOORS, etc.)
+            return char.IsLetterOrDigit(c) || c == '_';
+        }
+
+        private void BuildWordAwareContextStrings(
+            string original,
+            string search,
+            string replace,
+            bool caseSensitive,
+            out string fPre, out string fLeft, out string fMid, out string fRight, out string fPost,
+            out string rPre, out string rLeft, out string rMid, out string rRight, out string rPost)
+        {
+            fPre = original ?? "";
+            fLeft = fMid = fRight = fPost = "";
+
+            rPre = original ?? "";
+            rLeft = rMid = rRight = rPost = "";
+
+            if (string.IsNullOrEmpty(original) || string.IsNullOrEmpty(search))
+                return;
+
+            var comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            int idx = original.IndexOf(search, comparison);
+            if (idx < 0)
+                return;
+
+            int matchStart = idx;
+            int matchEnd = idx + search.Length; // exclusive
+
+            // Find word boundaries around the match
+            int wordStart = matchStart;
+            while (wordStart > 0 && IsWordChar(original[wordStart - 1]))
+                wordStart--;
+
+            int wordEnd = matchEnd;
+            while (wordEnd < original.Length && IsWordChar(original[wordEnd]))
+                wordEnd++;
+
+            // Found segments
+            fPre = original.Substring(0, wordStart);
+            fLeft = original.Substring(wordStart, matchStart - wordStart);
+            fMid = original.Substring(matchStart, search.Length);
+            fRight = original.Substring(matchEnd, wordEnd - matchEnd);
+            fPost = original.Substring(wordEnd);
+
+            // Build replaced string (single replacement at first match, consistent with highlighting)
+            string repl = original.Remove(matchStart, search.Length).Insert(matchStart, replace ?? "");
+
+            // Replaced segments:
+            // wordStart stays the same, matchStart stays the same, but mid length changes to replace.Length
+            int replMidLen = (replace ?? "").Length;
+            int replMatchEnd = matchStart + replMidLen;
+
+            // Word end shifts by delta in length
+            int delta = replMidLen - search.Length;
+            int replWordEnd = wordEnd + delta;
+
+            rPre = repl.Substring(0, wordStart);
+            rLeft = repl.Substring(wordStart, matchStart - wordStart);
+            rMid = repl.Substring(matchStart, replMidLen);
+            rRight = repl.Substring(replMatchEnd, replWordEnd - replMatchEnd);
+            rPost = repl.Substring(replWordEnd);
+        }
+
+
 
         private static bool Contains(string haystack, string needle, bool caseSensitive)
         {
             if (string.IsNullOrEmpty(haystack) || string.IsNullOrEmpty(needle)) return false;
             return haystack.IndexOf(needle, caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase) >= 0;
         }
+
+
 
         private static string GetTypeComment(Element tElem)
         {
@@ -509,6 +602,49 @@ namespace QPK_Keynote_Manager
             }
             sb.Append(input, start, input.Length - start);
             return sb.ToString();
+        }
+
+        private void BuildSubstringContextStrings(
+            string original,
+            string search,
+            string replace,
+            bool caseSensitive,
+            out string foundPrefix,
+            out string foundWord,
+            out string foundSuffix,
+            out string replPrefix,
+            out string replWord,
+            out string replSuffix)
+        {
+            foundPrefix = original;
+            foundWord = "";
+            foundSuffix = "";
+
+            replPrefix = original;
+            replWord = "";
+            replSuffix = "";
+
+            if (string.IsNullOrEmpty(original) || string.IsNullOrEmpty(search))
+                return;
+
+            var comparison = caseSensitive
+                ? StringComparison.Ordinal
+                : StringComparison.OrdinalIgnoreCase;
+
+            int idx = original.IndexOf(search, comparison);
+            if (idx < 0)
+                return;
+
+            foundPrefix = original.Substring(0, idx);
+            foundWord = original.Substring(idx, search.Length);
+            foundSuffix = original.Substring(idx + search.Length);
+
+            string replaced = original.Remove(idx, search.Length)
+                                       .Insert(idx, replace ?? "");
+
+            replPrefix = replaced.Substring(0, idx);
+            replWord = replace ?? "";
+            replSuffix = replaced.Substring(idx + (replace?.Length ?? 0));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

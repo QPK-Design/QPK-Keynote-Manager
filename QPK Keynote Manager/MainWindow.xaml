@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:QPK_Keynote_Manager"
         mc:Ignorable="d"
-        Title="QPK Keynote Manager 12-09-2025"
+        Title="QPK Keynote Manager"
         Height="800" Width="800">
 
     <Window.Resources>
@@ -174,26 +174,35 @@
                     HorizontalAlignment="Stretch"
                     Panel.ZIndex="0">
 
-                <!-- IMPORTANT: Border can only have ONE child -->
-                <StackPanel>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
 
                     <!-- Scope dropdown -->
-                    <StackPanel Orientation="Horizontal" Margin="5,0,5,8" VerticalAlignment="Center">
+                    <StackPanel Grid.Row="0"
+                        Orientation="Horizontal"
+                        Margin="5,0,5,8"
+                        VerticalAlignment="Center">
                         <TextBlock Text="Preview:" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <ComboBox Width="200"
-                                  ItemsSource="{Binding AvailableScopes}"
-                                  SelectedItem="{Binding SelectedScope}"
-                                  DisplayMemberPath="DisplayName"/>
+                          ItemsSource="{Binding AvailableScopes}"
+                          SelectedItem="{Binding SelectedScope}"
+                          DisplayMemberPath="DisplayName"/>
                     </StackPanel>
 
                     <!-- Results grid -->
-                    <DataGrid x:Name="ResultsDataGrid"
-                              ItemsSource="{Binding CurrentResults}"
-                              SelectedItem="{Binding SelectedResult}"
-                              AutoGenerateColumns="False"
-                              IsReadOnly="True"
-                              Margin="5"
-                              CanUserAddRows="False">
+                    <DataGrid Grid.Row="1"
+                          x:Name="ResultsDataGrid"
+                          ItemsSource="{Binding CurrentResults}"
+                          SelectedItem="{Binding SelectedResult}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          Margin="5"
+                          CanUserAddRows="False"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.HorizontalScrollBarVisibility="Auto">
 
                         <!-- Row style -->
                         <DataGrid.RowStyle>
@@ -273,27 +282,47 @@
                             </DataGridTemplateColumn>
 
                             <!-- ===================== SHEET NAMES ONLY ===================== -->
-                            <DataGridTextColumn Header="Found Text"
-                                Binding="{Binding FoundText}"
-                                Width="3*">
-                                <DataGridTextColumn.Visibility>
+                            <DataGridTemplateColumn Header="Found Text" Width="3*">
+                                <DataGridTemplateColumn.Visibility>
                                     <Binding Source="{StaticResource VmProxy}"
                                          Path="Data.SelectedScope.Kind"
                                          Converter="{StaticResource ScopeKindToVisibilityConverter}"
                                          ConverterParameter="SheetNames"/>
-                                </DataGridTextColumn.Visibility>
-                            </DataGridTextColumn>
+                                </DataGridTemplateColumn.Visibility>
 
-                            <DataGridTextColumn Header="Replaced Text"
-                                Binding="{Binding ReplacedText}"
-                                Width="3*">
-                                <DataGridTextColumn.Visibility>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextWrapping="Wrap" ToolTip="{Binding FoundText}">
+                                            <Run Text="{Binding FoundPreText}" />
+                                            <Run Text="{Binding FoundWordLeft}" Foreground="Gray"/>
+                                            <Run Text="{Binding FoundWordMid}" Foreground="Green" FontWeight="Bold"/>
+                                            <Run Text="{Binding FoundWordRight}" Foreground="Gray"/>
+                                            <Run Text="{Binding FoundPostText}" />
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <DataGridTemplateColumn Header="Replaced Text" Width="3*">
+                                <DataGridTemplateColumn.Visibility>
                                     <Binding Source="{StaticResource VmProxy}"
                                          Path="Data.SelectedScope.Kind"
                                          Converter="{StaticResource ScopeKindToVisibilityConverter}"
                                          ConverterParameter="SheetNames"/>
-                                </DataGridTextColumn.Visibility>
-                            </DataGridTextColumn>
+                                </DataGridTemplateColumn.Visibility>
+
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextWrapping="Wrap" ToolTip="{Binding ReplacedText}">
+                                            <Run Text="{Binding ReplPreText}" />
+                                            <Run Text="{Binding ReplWordLeft}" Foreground="Gray"/>
+                                            <Run Text="{Binding ReplWordMid}" Foreground="Red" FontWeight="Bold"/>
+                                            <Run Text="{Binding ReplWordRight}" Foreground="Gray"/>
+                                            <Run Text="{Binding ReplPostText}" />
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
 
                             <!-- ===================== COMMON ===================== -->
                             <DataGridTextColumn Header="Sheet"
@@ -303,7 +332,7 @@
                         </DataGrid.Columns>
 
                     </DataGrid>
-                </StackPanel>
+                </Grid>
             </Border>
 
             <!-- Overlapping Label -->
