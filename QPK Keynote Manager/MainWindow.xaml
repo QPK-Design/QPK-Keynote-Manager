@@ -162,6 +162,24 @@
                        VerticalAlignment="Top"
                        HorizontalAlignment="Left"
                        Panel.ZIndex="1"/>
+            <!-- Help / About button (rounded, masked, padded, hover accent) -->
+            <Border Background="White"
+                CornerRadius="14"
+                Padding="4"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Right"
+                Margin="0,-12,20,0"
+                Panel.ZIndex="2">
+
+                <Button Content="About"
+                    MinWidth="44"
+                    Height="26"
+                    FontWeight="Bold"
+                    ToolTip="Help / About"
+                    Style="{StaticResource HoverAccentButton}"
+                    Click="HelpAbout_Click"
+                    Padding="10,0"/>
+            </Border>
         </Grid>
 
         <!-- ===================== Results DataGrid Card ===================== -->

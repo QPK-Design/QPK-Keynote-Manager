@@ -149,6 +149,14 @@ namespace QPK_Keynote_Manager
             }
         }
 
+        private void HelpAbout_Click(object sender, RoutedEventArgs e)
+        {
+            var w = new AboutWindow();
+            w.Owner = this;
+            w.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            w.ShowDialog();
+        }
+
         private static bool IsDoubleClickOnRow(DependencyObject originalSource)
         {
             if (originalSource == null) return false;
