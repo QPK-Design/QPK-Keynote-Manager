@@ -122,8 +122,9 @@ namespace QPK_Keynote_Manager
                     break;
 
                 case FindReplaceScopeKind.ViewTitles:
+                    VM.PreviewViewTitles();
                     TaskDialog.Show("QPK Keynote Manager",
-                        "View Titles preview is not wired yet in this step.");
+                        $"Preview complete.\n\nFound {VM.ViewTitleResults.Count} view name/title item(s) to change.");
                     break;
 
                 default:

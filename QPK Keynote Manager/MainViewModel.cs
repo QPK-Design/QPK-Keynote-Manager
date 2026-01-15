@@ -105,6 +105,9 @@ namespace QPK_Keynote_Manager
             private set { _currentResults = value; OnPropertyChanged(); }
         }
 
+        public ObservableCollection<ViewTitleNameReplaceRow> ViewTitleResults { get; } = new ObservableCollection<ViewTitleNameReplaceRow>();
+
+
         private IReplaceRow _selectedResult;
         public IReplaceRow SelectedResult
         {
@@ -147,11 +150,16 @@ namespace QPK_Keynote_Manager
                     CurrentResults = new ObservableCollection<IReplaceRow>(SheetNameResults.Cast<IReplaceRow>());
                     break;
 
+                case FindReplaceScopeKind.ViewTitles:
+                    CurrentResults = new ObservableCollection<IReplaceRow>(ViewTitleResults.Cast<IReplaceRow>());
+                    break;
+
                 default:
                     CurrentResults = new ObservableCollection<IReplaceRow>();
                     break;
             }
         }
+
 
         // ---------------- Sheet Name Preview ----------------
         public void PreviewSheetNames()
@@ -323,6 +331,199 @@ namespace QPK_Keynote_Manager
 
             UpdateCurrentResults();
         }
+
+        public void PreviewViewTitles()
+        {
+            ViewTitleResults.Clear();
+
+            string search = FindText ?? string.Empty;
+            string replace = ReplaceText ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(search))
+                return;
+
+            var comparison = IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            // Viewports -> View + Sheet
+            var viewports = new FilteredElementCollector(_doc)
+                .OfClass(typeof(Viewport))
+                .Cast<Viewport>()
+                .ToList();
+
+            foreach (var vp in viewports)
+            {
+                var view = _doc.GetElement(vp.ViewId) as View;
+                var sheet = _doc.GetElement(vp.SheetId) as ViewSheet;
+                if (view == null) continue;
+
+                string sheetLabel = (sheet == null)
+                    ? "Not on a Sheet"
+                    : $"{sheet.SheetNumber} - {sheet.Name}";
+
+                // ---------------- VN (View.Name) ----------------
+                string oldName = view.Name ?? string.Empty;
+                if (oldName.IndexOf(search, comparison) >= 0)
+                {
+                    string newName = IsCaseSensitive
+                        ? oldName.Replace(search, replace)
+                        : ReplaceIgnoreCase(oldName, search, replace);
+
+                    newName = (newName ?? string.Empty).Trim();
+
+                    if (!string.IsNullOrWhiteSpace(newName) &&
+                        !string.Equals(newName, oldName, comparison))
+                    {
+                        BuildWordAwareContextStrings(
+                            oldName, search, replace, IsCaseSensitive,
+                            out var fPre, out var fLeft, out var fMid, out var fRight, out var fPost,
+                            out var rPre, out var rLeft, out var rMid, out var rRight, out var rPost);
+
+                        ViewTitleResults.Add(new ViewTitleNameReplaceRow
+                        {
+                            ViewId = view.Id,
+                            SheetId = sheet?.Id ?? ElementId.InvalidElementId,
+
+                            Mode = "VN",
+                            ModeToolTip = "View Name",
+
+                            // For UI + IReplaceRow
+                            FoundText = oldName,
+                            ReplacedText = newName,
+
+                            // Keep for apply (your handlers use FullNewText)
+                            FullOldText = oldName,
+                            FullNewText = newName,
+
+                            // Found segments
+                            FoundPreText = fPre,
+                            FoundWordLeft = fLeft,
+                            FoundWordMid = fMid,
+                            FoundWordRight = fRight,
+                            FoundPostText = fPost,
+
+                            // Replaced segments
+                            ReplPreText = rPre,
+                            ReplWordLeft = rLeft,
+                            ReplWordMid = rMid,
+                            ReplWordRight = rRight,
+                            ReplPostText = rPost,
+
+                            Sheet = sheetLabel
+                        });
+                    }
+                }
+
+                // ---------------- VT (Title on Sheet) ----------------
+                // BuiltInParameter.VIEW_DESCRIPTION is "Title on Sheet"
+                string paramTitle = GetTitleOnSheet(view); // may be blank
+                string effectiveTitle = !string.IsNullOrWhiteSpace(paramTitle) ? paramTitle : oldName;
+
+                if (!string.IsNullOrEmpty(effectiveTitle) &&
+                    effectiveTitle.IndexOf(search, comparison) >= 0)
+                {
+                    string newTitle = IsCaseSensitive
+                        ? effectiveTitle.Replace(search, replace)
+                        : ReplaceIgnoreCase(effectiveTitle, search, replace);
+
+                    newTitle = (newTitle ?? string.Empty).Trim();
+
+                    if (!string.IsNullOrWhiteSpace(newTitle) &&
+                        !string.Equals(newTitle, effectiveTitle, comparison))
+                    {
+                        BuildWordAwareContextStrings(
+                            effectiveTitle, search, replace, IsCaseSensitive,
+                            out var fPre, out var fLeft, out var fMid, out var fRight, out var fPost,
+                            out var rPre, out var rLeft, out var rMid, out var rRight, out var rPost);
+
+                        ViewTitleResults.Add(new ViewTitleNameReplaceRow
+                        {
+                            ViewId = view.Id,
+                            SheetId = sheet?.Id ?? ElementId.InvalidElementId,
+
+                            Mode = "VT",
+                            ModeToolTip = "View Title",
+
+                            FoundText = effectiveTitle,
+                            ReplacedText = newTitle,
+
+                            FullOldText = effectiveTitle,
+                            FullNewText = newTitle,
+
+                            FoundPreText = fPre,
+                            FoundWordLeft = fLeft,
+                            FoundWordMid = fMid,
+                            FoundWordRight = fRight,
+                            FoundPostText = fPost,
+
+                            ReplPreText = rPre,
+                            ReplWordLeft = rLeft,
+                            ReplWordMid = rMid,
+                            ReplWordRight = rRight,
+                            ReplPostText = rPost,
+
+                            Sheet = sheetLabel
+                        });
+                    }
+                }
+
+            }
+            UpdateCurrentResults();
+        }
+
+        private static string GetTitleOnSheet(View view)
+        {
+            if (view == null) return string.Empty;
+
+            var p = view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
+            if (p == null) return string.Empty;
+
+            try { return p.AsString() ?? string.Empty; }
+            catch { return string.Empty; }
+        }
+
+        /// <summary>
+        /// Substring-based highlight: prefix + (matched search) + suffix.
+        /// This matches your green/red UI requirement more precisely than the token-based keynote helper.
+        /// </summary>
+        private static void BuildSubstringContextStrings(
+            string fullOld,
+            string search,
+            string replace,
+            bool caseSensitive,
+            out string foundPrefix,
+            out string foundWord,
+            out string foundSuffix,
+            out string replPrefix,
+            out string replWord,
+            out string replSuffix)
+        {
+            foundPrefix = foundWord = foundSuffix = string.Empty;
+            replPrefix = replWord = replSuffix = string.Empty;
+
+            if (string.IsNullOrEmpty(fullOld) || string.IsNullOrEmpty(search))
+                return;
+
+            var cmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+
+            int idx = fullOld.IndexOf(search, cmp);
+            if (idx < 0)
+            {
+                // fallback: show entire string if something unexpected happens
+                foundPrefix = fullOld;
+                replPrefix = caseSensitive ? fullOld.Replace(search, replace) : ReplaceIgnoreCase(fullOld, search, replace);
+                return;
+            }
+
+            foundPrefix = fullOld.Substring(0, idx);
+            foundWord = fullOld.Substring(idx, search.Length);
+            foundSuffix = fullOld.Substring(idx + search.Length);
+
+            replPrefix = foundPrefix;
+            replWord = replace; // red
+            replSuffix = foundSuffix;
+        }
+
+
 
         private static bool IsWordChar(char c)
         {
@@ -607,49 +808,6 @@ namespace QPK_Keynote_Manager
             }
             sb.Append(input, start, input.Length - start);
             return sb.ToString();
-        }
-
-        private void BuildSubstringContextStrings(
-            string original,
-            string search,
-            string replace,
-            bool caseSensitive,
-            out string foundPrefix,
-            out string foundWord,
-            out string foundSuffix,
-            out string replPrefix,
-            out string replWord,
-            out string replSuffix)
-        {
-            foundPrefix = original;
-            foundWord = "";
-            foundSuffix = "";
-
-            replPrefix = original;
-            replWord = "";
-            replSuffix = "";
-
-            if (string.IsNullOrEmpty(original) || string.IsNullOrEmpty(search))
-                return;
-
-            var comparison = caseSensitive
-                ? StringComparison.Ordinal
-                : StringComparison.OrdinalIgnoreCase;
-
-            int idx = original.IndexOf(search, comparison);
-            if (idx < 0)
-                return;
-
-            foundPrefix = original.Substring(0, idx);
-            foundWord = original.Substring(idx, search.Length);
-            foundSuffix = original.Substring(idx + search.Length);
-
-            string replaced = original.Remove(idx, search.Length)
-                                       .Insert(idx, replace ?? "");
-
-            replPrefix = replaced.Substring(0, idx);
-            replWord = replace ?? "";
-            replSuffix = replaced.Substring(idx + (replace?.Length ?? 0));
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -46,8 +46,7 @@ namespace QPK_Keynote_Manager
                         break;
 
                     case FindReplaceScopeKind.ViewTitles:
-                        TaskDialog.Show("QPK Keynote Manager",
-                            "Replace All for View Titles is not wired yet in this step.");
+                        ApplyAllViewTitleChanges(doc, vm);
                         break;
 
                     default:
@@ -60,6 +59,99 @@ namespace QPK_Keynote_Manager
                 TaskDialog.Show("QPK Keynote Manager", $"Error:\n{ex}");
             }
         }
+
+        private static void ApplyAllViewTitleChanges(Document doc, MainViewModel vm)
+        {
+            if (vm.ViewTitleResults == null || vm.ViewTitleResults.Count == 0)
+            {
+                TaskDialog.Show("QPK Keynote Manager", "No view title/name changes to apply. Run Preview first.");
+                return;
+            }
+
+            int changed = 0;
+            int failed = 0;
+            int skipped = 0;
+
+            // Build taken names once for VN
+            var taken = new HashSet<string>(
+                new FilteredElementCollector(doc)
+                    .OfClass(typeof(View))
+                    .Cast<View>()
+                    .Select(v => v.Name ?? string.Empty),
+                StringComparer.OrdinalIgnoreCase);
+
+            using (var tx = new Transaction(doc, "QPK Find & Replace — View Title/Name (All)"))
+            {
+                tx.Start();
+
+                foreach (var row in vm.ViewTitleResults.ToList())
+                {
+                    if (row == null) { failed++; continue; }
+                    if (row.IsApplied) { skipped++; continue; }
+
+                    var view = doc.GetElement(row.ViewId) as View;
+                    if (view == null) { failed++; continue; }
+
+                    string proposed = (row.FullNewText ?? string.Empty).Trim();
+                    if (string.IsNullOrWhiteSpace(proposed)) { failed++; continue; }
+
+                    bool ok = false;
+
+                    if (string.Equals(row.Mode, "VT", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var p = view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
+                        if (p != null && !p.IsReadOnly)
+                            ok = p.Set(proposed);
+                    }
+                    else if (string.Equals(row.Mode, "VN", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Allow renaming away from current name
+                        taken.Remove(view.Name ?? string.Empty);
+
+                        // Ensure uniqueness
+                        string actual = proposed;
+                        if (taken.Contains(actual))
+                        {
+                            int n = 2;
+                            while (taken.Contains($"{proposed} ({n})"))
+                                n++;
+                            actual = $"{proposed} ({n})";
+                        }
+
+                        try
+                        {
+                            view.Name = actual;
+                            ok = true;
+                            row.FullNewText = actual;
+                            taken.Add(actual);
+                        }
+                        catch
+                        {
+                            ok = false;
+                            // put old name back as taken if rename failed
+                            taken.Add(view.Name ?? string.Empty);
+                        }
+                    }
+
+                    if (ok)
+                    {
+                        changed++;
+                        row.IsApplied = true;
+                    }
+                    else
+                    {
+                        failed++;
+                    }
+                }
+
+                if (changed > 0) tx.Commit();
+                else tx.RollBack();
+            }
+
+            TaskDialog.Show("QPK Keynote Manager",
+                $"View Titles — Replace All complete.\n\nChanged: {changed}\nSkipped: {skipped}\nFailed: {failed}");
+        }
+
 
         private static void ApplyAllSheetNameChanges(Document doc, MainViewModel vm)
         {

@@ -311,6 +311,59 @@
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>
 
+                            <!-- ===================== VIEW TITLES ONLY (VN / VT) ===================== -->
+                            <DataGridTemplateColumn Header="Title/Name" Width=".6*">
+                                <DataGridTemplateColumn.Visibility>
+                                    <Binding Source="{StaticResource VmProxy}"
+                                         Path="Data.SelectedScope.Kind"
+                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                         ConverterParameter="ViewTitles"/>
+                                </DataGridTemplateColumn.Visibility>
+
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Mode}" ToolTip="{Binding ModeToolTip}" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- View Titles Found Text (green) -->
+                            <DataGridTemplateColumn Header="Found Text" Width="3*">
+                                <DataGridTemplateColumn.Visibility>
+                                    <Binding Source="{StaticResource VmProxy}"
+                                         Path="Data.SelectedScope.Kind"
+                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                         ConverterParameter="ViewTitles"/>
+                                </DataGridTemplateColumn.Visibility>
+
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextWrapping="Wrap" ToolTip="{Binding FoundText}">
+                                            <TextBlock.Inlines><Run Text="{Binding FoundPreText}"/><Run Text="{Binding FoundWordLeft}"/><Run Text="{Binding FoundWordMid}" Foreground="Green" FontWeight="Bold"/><Run Text="{Binding FoundWordRight}"/><Run Text="{Binding FoundPostText}"/></TextBlock.Inlines>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+                            <!-- View Titles Replaced Text (red) -->
+                            <DataGridTemplateColumn Header="Replaced Text" Width="3*">
+                                <DataGridTemplateColumn.Visibility>
+                                    <Binding Source="{StaticResource VmProxy}"
+                                         Path="Data.SelectedScope.Kind"
+                                         Converter="{StaticResource ScopeKindToVisibilityConverter}"
+                                         ConverterParameter="ViewTitles"/>
+                                </DataGridTemplateColumn.Visibility>
+
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock TextWrapping="Wrap" ToolTip="{Binding ReplacedText}">
+                                            <TextBlock.Inlines><Run Text="{Binding ReplPreText}"/><Run Text="{Binding ReplWordLeft}"/><Run Text="{Binding ReplWordMid}" Foreground="Red" FontWeight="Bold"/><Run Text="{Binding ReplWordRight}"/><Run Text="{Binding ReplPostText}"/></TextBlock.Inlines>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
+
 
 
 
