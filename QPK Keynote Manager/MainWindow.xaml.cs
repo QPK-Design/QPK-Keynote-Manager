@@ -155,6 +155,7 @@ namespace QPK_Keynote_Manager
             w.Owner = this;
             w.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             w.ShowDialog();
+            sdfa
         }
 
         private static bool IsDoubleClickOnRow(DependencyObject originalSource)
