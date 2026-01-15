@@ -1,5 +1,10 @@
 ﻿using System;
+using System.Reflection;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Input;
+using System.Windows.Media;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 
@@ -94,6 +99,150 @@ namespace QPK_Keynote_Manager
             }
 
             return false;
+        }
+        private void ResultsDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            // Only react if the double-click happened on an actual DataGridRow
+            if (!IsDoubleClickOnRow(e.OriginalSource as DependencyObject))
+                return;
+
+            var row = VM?.SelectedResult as IReplaceRow;
+            if (row == null)
+                return;
+
+            var sheet = ResolveSheetFromRow(row);
+            if (sheet == null)
+            {
+                TaskDialog.Show("QPK Keynote Manager",
+                    "This row is not associated with a sheet (or the sheet could not be found).");
+                return;
+            }
+
+            try
+            {
+                // Preferred in modern Revit
+                _uidoc.RequestViewChange(sheet);
+            }
+            catch
+            {
+                try
+                {
+                    // Fallback
+                    _uidoc.ActiveView = sheet;
+                }
+                catch
+                {
+                    TaskDialog.Show("QPK Keynote Manager",
+                        "Unable to open the sheet. Revit may be in a state that prevents view changes.");
+                    return;
+                }
+            }
+
+            try
+            {
+                // Optional: select the sheet in the model
+                _uidoc.Selection.SetElementIds(new[] { sheet.Id });
+            }
+            catch
+            {
+                // harmless if selection fails
+            }
+        }
+
+        private static bool IsDoubleClickOnRow(DependencyObject originalSource)
+        {
+            if (originalSource == null) return false;
+
+            DependencyObject current = originalSource;
+
+            while (current != null)
+            {
+                if (current is DataGridRow)
+                    return true;
+
+                if (current is DataGridColumnHeader || current is ScrollBar)
+                    return false;
+
+                current = GetParentSafe(current);
+            }
+
+            return false;
+        }
+
+        private static DependencyObject GetParentSafe(DependencyObject child)
+        {
+            if (child == null) return null;
+
+            // If it's a Visual/Visual3D, use VisualTreeHelper
+            if (child is Visual || child is System.Windows.Media.Media3D.Visual3D)
+                return VisualTreeHelper.GetParent(child);
+
+            // If it's a FrameworkContentElement (Run, Paragraph, etc.)
+            if (child is FrameworkContentElement fce)
+                return fce.Parent;
+
+            // Generic ContentElement
+            if (child is ContentElement ce)
+                return ContentOperations.GetParent(ce);
+
+            return null;
+        }
+
+
+        private ViewSheet ResolveSheetFromRow(IReplaceRow row)
+        {
+            if (row == null) return null;
+
+            // 1) If the row type has a SheetId property, use it (SheetName + ViewTitles rows)
+            var sheetId = TryGetSheetIdViaReflection(row);
+            if (sheetId != ElementId.InvalidElementId)
+            {
+                var sheet = _doc.GetElement(sheetId) as ViewSheet;
+                if (sheet != null) return sheet;
+            }
+
+            // 2) Fallback: parse from the "Sheet" display string (used by Keynotes results)
+            // expected format: "A101 - Sheet Name" or "Not on a Sheet"
+            var sheetNumber = ParseSheetNumber(row.Sheet);
+            if (string.IsNullOrWhiteSpace(sheetNumber))
+                return null;
+
+            var match = new FilteredElementCollector(_doc)
+                .OfClass(typeof(ViewSheet))
+                .Cast<ViewSheet>()
+                .FirstOrDefault(s => string.Equals(s.SheetNumber, sheetNumber, System.StringComparison.OrdinalIgnoreCase));
+
+            return match;
+        }
+
+        private static ElementId TryGetSheetIdViaReflection(IReplaceRow row)
+        {
+            try
+            {
+                var prop = row.GetType().GetProperty("SheetId", BindingFlags.Public | BindingFlags.Instance);
+                if (prop == null) return ElementId.InvalidElementId;
+
+                var val = prop.GetValue(row, null);
+                if (val is ElementId eid) return eid;
+            }
+            catch
+            {
+                // ignore
+            }
+
+            return ElementId.InvalidElementId;
+        }
+
+        private static string ParseSheetNumber(string sheetDisplay)
+        {
+            if (string.IsNullOrWhiteSpace(sheetDisplay)) return null;
+            if (sheetDisplay.StartsWith("Not on a Sheet")) return null;
+
+            // Most of your rows use: "{SheetNumber} - {SheetName}"
+            int idx = sheetDisplay.IndexOf(" - ");
+            if (idx <= 0) return null;
+
+            return sheetDisplay.Substring(0, idx).Trim();
         }
 
         private void PreviewFindReplace_Click(object sender, RoutedEventArgs e)

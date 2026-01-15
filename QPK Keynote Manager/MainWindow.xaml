@@ -193,14 +193,15 @@
                     </StackPanel>
 
                     <!-- Results grid -->
-                    <DataGrid Grid.Row="1"
-                          x:Name="ResultsDataGrid"
+                    <DataGrid x:Name="ResultsDataGrid"
+                          Grid.Row="1"
                           ItemsSource="{Binding CurrentResults}"
                           SelectedItem="{Binding SelectedResult}"
                           AutoGenerateColumns="False"
                           IsReadOnly="True"
                           Margin="5"
                           CanUserAddRows="False"
+                          MouseDoubleClick="ResultsDataGrid_MouseDoubleClick"
                           ScrollViewer.VerticalScrollBarVisibility="Auto"
                           ScrollViewer.HorizontalScrollBarVisibility="Auto">
 
