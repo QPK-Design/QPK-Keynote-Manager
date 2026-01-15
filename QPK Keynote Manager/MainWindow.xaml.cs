@@ -98,40 +98,27 @@ namespace QPK_Keynote_Manager
 
         private void PreviewFindReplace_Click(object sender, RoutedEventArgs e)
         {
-            if (VM?.SelectedScope == null)
-            {
-                TaskDialog.Show("QPK Keynote Manager", "Select a preview scope first.");
+            if (VM == null)
                 return;
-            }
 
-            switch (VM.SelectedScope.Kind)
-            {
-                case FindReplaceScopeKind.SheetNames:
-                    VM.PreviewSheetNames();
-                    TaskDialog.Show("QPK Keynote Manager",
-                        $"Preview complete.\n\nFound {VM.SheetNameResults.Count} sheet name(s) to change.");
-                    break;
+            // Scan ALL enabled scopes (checkboxes), not the dropdown selection
+            VM.PreviewEnabledScopes();
 
-                case FindReplaceScopeKind.Keynotes:
-                    VM.PreviewKeynotes();
-                    MessageBox.Show(
-                        $"Scanned schedules and found {VM.KeynoteResults.Count} keynote comment(s) to change.",
-                        "Preview Complete",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Information);
-                    break;
+            // Summary
+            int k = VM.KeynoteResults?.Count ?? 0;
+            int s = VM.SheetNameResults?.Count ?? 0;
+            int v = VM.ViewTitleResults?.Count ?? 0;
 
-                case FindReplaceScopeKind.ViewTitles:
-                    VM.PreviewViewTitles();
-                    TaskDialog.Show("QPK Keynote Manager",
-                        $"Preview complete.\n\nFound {VM.ViewTitleResults.Count} view name/title item(s) to change.");
-                    break;
-
-                default:
-                    TaskDialog.Show("QPK Keynote Manager", "Unknown scope selected.");
-                    break;
-            }
+            TaskDialog.Show("QPK Keynote Manager",
+                $"Preview complete.\n\n" +
+                $"Keynotes: {k}\n" +
+                $"Sheet Names: {s}\n" +
+                $"View Titles: {v}\n\n" +
+                $"Use the dropdown to review each scope's results.");
         }
+
+
+
 
         private void ReplaceSelected_Click(object sender, RoutedEventArgs e)
         {

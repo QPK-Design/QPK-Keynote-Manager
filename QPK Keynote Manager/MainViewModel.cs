@@ -161,8 +161,9 @@ namespace QPK_Keynote_Manager
         }
 
 
+
         // ---------------- Sheet Name Preview ----------------
-        public void PreviewSheetNames()
+        public void PreviewSheetNames(bool updateCurrentResults = true)
         {
             SheetNameResults.Clear();
 
@@ -226,10 +227,11 @@ namespace QPK_Keynote_Manager
                 });
             }
 
-            UpdateCurrentResults();
+            if (updateCurrentResults)
+                UpdateCurrentResults();
         }
 
-        public void PreviewKeynotes()
+        public void PreviewKeynotes(bool updateCurrentResults = true)
         {
             KeynoteResults.Clear();
 
@@ -329,10 +331,11 @@ namespace QPK_Keynote_Manager
                 }
             }
 
-            UpdateCurrentResults();
+            if (updateCurrentResults)
+                UpdateCurrentResults();
         }
 
-        public void PreviewViewTitles()
+        public void PreviewViewTitles(bool updateCurrentResults = true)
         {
             ViewTitleResults.Clear();
 
@@ -467,7 +470,8 @@ namespace QPK_Keynote_Manager
                 }
 
             }
-            UpdateCurrentResults();
+            if (updateCurrentResults)
+                UpdateCurrentResults();
         }
 
         private static string GetTitleOnSheet(View view)
@@ -808,6 +812,29 @@ namespace QPK_Keynote_Manager
             }
             sb.Append(input, start, input.Length - start);
             return sb.ToString();
+        }
+
+        public void PreviewEnabledScopes()
+        {
+            // Remember what the user is currently viewing in the dropdown
+            var keepSelected = SelectedScope?.Kind;
+
+            // Run scans based on checkboxes
+            if (IsKeynotesEnabled)
+                PreviewKeynotes(updateCurrentResults: false);
+
+            if (IsSheetNamesEnabled)
+                PreviewSheetNames(updateCurrentResults: false);
+
+            if (IsViewTitlesEnabled)
+                PreviewViewTitles(updateCurrentResults: false);
+
+            // Restore whatever the user was viewing
+            if (keepSelected != null)
+                SelectedScope = AvailableScopes.FirstOrDefault(s => s.Kind == keepSelected) ?? SelectedScope;
+
+            // Finally, refresh the grid for the dropdown-selected scope
+            UpdateCurrentResults();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
