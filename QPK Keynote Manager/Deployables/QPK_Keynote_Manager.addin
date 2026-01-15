@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>QPK Keynote Manager</Name>
+    <Assembly>C:\Users\aguter\source\repos\QPK Keynote Manager\QPK Keynote Manager\bin\Debug\net8.0-windows\QPK Keynote Manager.dll</Assembly>
+    <FullClassName>QPK_Keynote_Manager.ExternalApp</FullClassName> <!-- or App if that's your IExternalApplication -->
+    <AddInId>39A10B98-F920-433B-A81D-A0CD2B699B21</AddInId>
+    <VendorId>QPK</VendorId>
+    <VendorDescription>QPK Addins</VendorDescription>
+  </AddIn>
+</RevitAddIns>
