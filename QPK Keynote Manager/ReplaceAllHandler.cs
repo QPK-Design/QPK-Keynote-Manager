@@ -17,8 +17,8 @@ namespace QPK_Keynote_Manager
 
         public void Execute(UIApplication app)
         {
-            var uidoc = app?.ActiveUIDocument;
-            var doc = uidoc?.Document;
+            UIDocument? uidoc = app?.ActiveUIDocument;
+            Document? doc = uidoc?.Document;
 
             if (doc == null)
             {
@@ -26,7 +26,7 @@ namespace QPK_Keynote_Manager
                 return;
             }
 
-            var vm = _window.VM;
+            MainViewModel vm = _window.VM;
             if (vm?.SelectedScope == null)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Select a scope first.");
@@ -73,23 +73,23 @@ namespace QPK_Keynote_Manager
             int skipped = 0;
 
             // Build taken names once for VN
-            var taken = new HashSet<string>(
+            HashSet<string> taken = new HashSet<string>(
                 new FilteredElementCollector(doc)
                     .OfClass(typeof(View))
                     .Cast<View>()
                     .Select(v => v.Name ?? string.Empty),
                 StringComparer.OrdinalIgnoreCase);
 
-            using (var tx = new Transaction(doc, "QPK Find & Replace — View Title/Name (All)"))
+            using (Transaction tx = new Transaction(doc, "QPK Find & Replace — View Title/Name (All)"))
             {
                 tx.Start();
 
-                foreach (var row in vm.ViewTitleResults.ToList())
+                foreach (ViewTitleNameReplaceRow? row in vm.ViewTitleResults.ToList())
                 {
                     if (row == null) { failed++; continue; }
                     if (row.IsApplied) { skipped++; continue; }
 
-                    var view = doc.GetElement(row.ViewId) as View;
+                    View? view = doc.GetElement(row.ViewId) as View;
                     if (view == null) { failed++; continue; }
 
                     string proposed = (row.FullNewText ?? string.Empty).Trim();
@@ -99,7 +99,7 @@ namespace QPK_Keynote_Manager
 
                     if (string.Equals(row.Mode, "VT", StringComparison.OrdinalIgnoreCase))
                     {
-                        var p = view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
+                        Parameter p = view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
                         if (p != null && !p.IsReadOnly)
                             ok = p.Set(proposed);
                     }
@@ -165,11 +165,11 @@ namespace QPK_Keynote_Manager
             int failed = 0;
             int skipped = 0;
 
-            using (var tx = new Transaction(doc, "QPK Find & Replace — Sheet Names (All)"))
+            using (Transaction tx = new Transaction(doc, "QPK Find & Replace — Sheet Names (All)"))
             {
                 tx.Start();
 
-                foreach (var row in vm.SheetNameResults.ToList())
+                foreach (SheetNameReplaceRow? row in vm.SheetNameResults.ToList())
                 {
                     if (row == null)
                     {
@@ -189,21 +189,21 @@ namespace QPK_Keynote_Manager
                         continue;
                     }
 
-                    var sheet = doc.GetElement(row.SheetId) as ViewSheet;
+                    ViewSheet? sheet = doc.GetElement(row.SheetId) as ViewSheet;
                     if (sheet == null)
                     {
                         failed++;
                         continue;
                     }
 
-                    var p = sheet.get_Parameter(BuiltInParameter.SHEET_NAME);
+                    Parameter p = sheet.get_Parameter(BuiltInParameter.SHEET_NAME);
                     if (p == null || p.IsReadOnly)
                     {
                         failed++;
                         continue;
                     }
 
-                    var newName = (row.ReplacedText ?? string.Empty).Trim();
+                    string newName = (row.ReplacedText ?? string.Empty).Trim();
                     if (string.IsNullOrWhiteSpace(newName))
                     {
                         failed++;
@@ -255,11 +255,11 @@ namespace QPK_Keynote_Manager
             int failed = 0;
             int skipped = 0;
 
-            using (var tx = new Transaction(doc, "Replace Type Comments (All)"))
+            using (Transaction tx = new Transaction(doc, "Replace Type Comments (All)"))
             {
                 tx.Start();
 
-                foreach (var row in vm.KeynoteResults.ToList())
+                foreach (ReplaceResult? row in vm.KeynoteResults.ToList())
                 {
                     if (row == null)
                     {
@@ -279,7 +279,7 @@ namespace QPK_Keynote_Manager
                         continue;
                     }
 
-                    var tElem = doc.GetElement(row.TypeId);
+                    Element tElem = doc.GetElement(row.TypeId);
                     if (tElem == null)
                     {
                         failed++;
@@ -317,9 +317,6 @@ namespace QPK_Keynote_Manager
                 $"Keynotes — Replace All complete.\n\nChanged: {changed}\nSkipped: {skipped}\nFailed/No-Op: {failed}");
         }
 
-        public string GetName()
-        {
-            return "QPK Keynote Manager - Replace All Handler";
-        }
+        public string GetName() => "QPK Keynote Manager - Replace All Handler";
     }
 }

@@ -47,10 +47,7 @@ namespace QPK_Keynote_Manager
         /// <summary>
         /// Used by external event handlers to fetch currently selected row in the DataGrid.
         /// </summary>
-        internal IReplaceRow GetSelectedRow()
-        {
-            return VM?.SelectedResult;
-        }
+        internal IReplaceRow? GetSelectedRow() => VM?.SelectedResult;
 
         /// <summary>
         /// Sets the type comment text (BuiltInParameter.ALL_MODEL_TYPE_COMMENTS first, then fallbacks).
@@ -103,14 +100,14 @@ namespace QPK_Keynote_Manager
         private void ResultsDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             // Only react if the double-click happened on an actual DataGridRow
-            if (!IsDoubleClickOnRow(e.OriginalSource as DependencyObject))
+            if (!IsDoubleClickOnRow(originalSource: e.OriginalSource as DependencyObject))
                 return;
 
-            var row = VM?.SelectedResult as IReplaceRow;
+            IReplaceRow? row = VM?.SelectedResult as IReplaceRow;
             if (row == null)
                 return;
 
-            var sheet = ResolveSheetFromRow(row);
+            ViewSheet? sheet = ResolveSheetFromRow(row);
             if (sheet == null)
             {
                 TaskDialog.Show("QPK Keynote Manager",
@@ -151,7 +148,7 @@ namespace QPK_Keynote_Manager
 
         private void HelpAbout_Click(object sender, RoutedEventArgs e)
         {
-            var w = new AboutWindow();
+            AboutWindow w = new AboutWindow();
             w.Owner = this;
             w.WindowStartupLocation = WindowStartupLocation.CenterOwner;
             w.ShowDialog();
@@ -178,7 +175,7 @@ namespace QPK_Keynote_Manager
             return false;
         }
 
-        private static DependencyObject GetParentSafe(DependencyObject child)
+        private static DependencyObject? GetParentSafe(DependencyObject child)
         {
             if (child == null) return null;
 
@@ -198,25 +195,25 @@ namespace QPK_Keynote_Manager
         }
 
 
-        private ViewSheet ResolveSheetFromRow(IReplaceRow row)
+        private ViewSheet? ResolveSheetFromRow(IReplaceRow row)
         {
             if (row == null) return null;
 
             // 1) If the row type has a SheetId property, use it (SheetName + ViewTitles rows)
-            var sheetId = TryGetSheetIdViaReflection(row);
+            ElementId sheetId = TryGetSheetIdViaReflection(row);
             if (sheetId != ElementId.InvalidElementId)
             {
-                var sheet = _doc.GetElement(sheetId) as ViewSheet;
+                ViewSheet? sheet = _doc.GetElement(sheetId) as ViewSheet;
                 if (sheet != null) return sheet;
             }
 
             // 2) Fallback: parse from the "Sheet" display string (used by Keynotes results)
             // expected format: "A101 - Sheet Name" or "Not on a Sheet"
-            var sheetNumber = ParseSheetNumber(row.Sheet);
+            string? sheetNumber = ParseSheetNumber(row.Sheet);
             if (string.IsNullOrWhiteSpace(sheetNumber))
                 return null;
 
-            var match = new FilteredElementCollector(_doc)
+            ViewSheet match = new FilteredElementCollector(_doc)
                 .OfClass(typeof(ViewSheet))
                 .Cast<ViewSheet>()
                 .FirstOrDefault(s => string.Equals(s.SheetNumber, sheetNumber, System.StringComparison.OrdinalIgnoreCase));
@@ -228,10 +225,10 @@ namespace QPK_Keynote_Manager
         {
             try
             {
-                var prop = row.GetType().GetProperty("SheetId", BindingFlags.Public | BindingFlags.Instance);
+                PropertyInfo prop = row.GetType().GetProperty("SheetId", BindingFlags.Public | BindingFlags.Instance);
                 if (prop == null) return ElementId.InvalidElementId;
 
-                var val = prop.GetValue(row, null);
+                object val = prop.GetValue(row, null);
                 if (val is ElementId eid) return eid;
             }
             catch
@@ -242,7 +239,7 @@ namespace QPK_Keynote_Manager
             return ElementId.InvalidElementId;
         }
 
-        private static string ParseSheetNumber(string sheetDisplay)
+        private static string? ParseSheetNumber(string sheetDisplay)
         {
             if (string.IsNullOrWhiteSpace(sheetDisplay)) return null;
             if (sheetDisplay.StartsWith("Not on a Sheet")) return null;
@@ -260,7 +257,9 @@ namespace QPK_Keynote_Manager
                 return;
 
             // Scan ALL enabled scopes (checkboxes), not the dropdown selection
-            VM.PreviewEnabledScopes();
+            VM.PreviewEnabledScopes(
+            // Scan ALL enabled scopes (checkboxes), not the dropdown selection
+            VM.GetAvailableScopes());
 
             // Summary
             int k = VM.KeynoteResults?.Count ?? 0;
@@ -278,14 +277,8 @@ namespace QPK_Keynote_Manager
 
 
 
-        private void ReplaceSelected_Click(object sender, RoutedEventArgs e)
-        {
-            _replaceSelectedEvent?.Raise();
-        }
+        private void ReplaceSelected_Click(object sender, RoutedEventArgs e) => _replaceSelectedEvent?.Raise();
 
-        private void ReplaceAll_Click(object sender, RoutedEventArgs e)
-        {
-            _replaceAllEvent?.Raise();
-        }
+        private void ReplaceAll_Click(object sender, RoutedEventArgs e) => _replaceAllEvent?.Raise();
     }
 }

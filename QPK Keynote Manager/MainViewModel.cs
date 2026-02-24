@@ -117,7 +117,7 @@ namespace QPK_Keynote_Manager
 
         private void RefreshAvailableScopes()
         {
-            var prevKind = SelectedScope?.Kind;
+            FindReplaceScopeKind? prevKind = SelectedScope?.Kind;
 
             AvailableScopes.Clear();
 
@@ -173,14 +173,14 @@ namespace QPK_Keynote_Manager
             if (string.IsNullOrWhiteSpace(search))
                 return;
 
-            var comparison = IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            StringComparison comparison = IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
-            var sheets = new FilteredElementCollector(_doc)
+            List<ViewSheet> sheets = new FilteredElementCollector(_doc)
                 .OfClass(typeof(ViewSheet))
                 .Cast<ViewSheet>()
                 .ToList();
 
-            foreach (var sheet in sheets)
+            foreach (ViewSheet? sheet in sheets)
             {
                 string oldName = sheet.Name ?? string.Empty;
 
@@ -199,8 +199,8 @@ namespace QPK_Keynote_Manager
                 // --- context strings for green/red UI (match keynote UX) ---
                 BuildWordAwareContextStrings(
                     oldName, search, replace, IsCaseSensitive,
-                    out var fPre, out var fLeft, out var fMid, out var fRight, out var fPost,
-                    out var rPre, out var rLeft, out var rMid, out var rRight, out var rPost);
+                    out string? fPre, out string? fLeft, out string? fMid, out string? fRight, out string? fPost,
+                    out string? rPre, out string? rLeft, out string? rMid, out string? rRight, out string? rPost);
 
                 SheetNameResults.Add(new SheetNameReplaceRow
                 {
@@ -241,16 +241,16 @@ namespace QPK_Keynote_Manager
             if (string.IsNullOrWhiteSpace(search))
                 return;
 
-            var seenTypeIds = new HashSet<ElementId>();
+            HashSet<ElementId> seenTypeIds = new HashSet<ElementId>();
             int matchCount = 0;
 
-            var schedules = new FilteredElementCollector(_doc)
+            List<ViewSchedule> schedules = new FilteredElementCollector(_doc)
                 .OfClass(typeof(ViewSchedule))
                 .Cast<ViewSchedule>()
                 .Where(vs => !vs.IsTemplate)
                 .ToList();
 
-            foreach (var vs in schedules)
+            foreach (ViewSchedule? vs in schedules)
             {
                 if (!ScheduleShowsCommentField(vs))
                     continue;
@@ -267,7 +267,7 @@ namespace QPK_Keynote_Manager
                     continue;
                 }
 
-                foreach (var elem in elems)
+                foreach (Element elem in elems)
                 {
                     if (elem == null) continue;
 
@@ -275,7 +275,7 @@ namespace QPK_Keynote_Manager
                     if (typeId == ElementId.InvalidElementId) continue;
                     if (seenTypeIds.Contains(typeId)) continue;
 
-                    var tElem = _doc.GetElement(typeId);
+                    Element tElem = _doc.GetElement(typeId);
                     if (tElem == null) continue;
 
                     string oldComment = GetTypeComment(tElem);
@@ -298,8 +298,8 @@ namespace QPK_Keynote_Manager
                     // --- context strings for green/red UI ---
                     BuildWordAwareContextStrings(
                         oldComment, search, replace, IsCaseSensitive,
-                        out var fPre, out var fLeft, out var fMid, out var fRight, out var fPost,
-                        out var rPre, out var rLeft, out var rMid, out var rRight, out var rPost);
+                        out string? fPre, out string? fLeft, out string? fMid, out string? fRight, out string? fPost,
+                        out string? rPre, out string? rLeft, out string? rMid, out string? rRight, out string? rPost);
 
                     matchCount++;
 
@@ -345,18 +345,18 @@ namespace QPK_Keynote_Manager
             if (string.IsNullOrWhiteSpace(search))
                 return;
 
-            var comparison = IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            StringComparison comparison = IsCaseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
             // Viewports -> View + Sheet
-            var viewports = new FilteredElementCollector(_doc)
+            List<Viewport> viewports = new FilteredElementCollector(_doc)
                 .OfClass(typeof(Viewport))
                 .Cast<Viewport>()
                 .ToList();
 
-            foreach (var vp in viewports)
+            foreach (Viewport? vp in viewports)
             {
-                var view = _doc.GetElement(vp.ViewId) as View;
-                var sheet = _doc.GetElement(vp.SheetId) as ViewSheet;
+                View? view = _doc.GetElement(vp.ViewId) as View;
+                ViewSheet? sheet = _doc.GetElement(vp.SheetId) as ViewSheet;
                 if (view == null) continue;
 
                 string sheetLabel = (sheet == null)
@@ -378,8 +378,8 @@ namespace QPK_Keynote_Manager
                     {
                         BuildWordAwareContextStrings(
                             oldName, search, replace, IsCaseSensitive,
-                            out var fPre, out var fLeft, out var fMid, out var fRight, out var fPost,
-                            out var rPre, out var rLeft, out var rMid, out var rRight, out var rPost);
+                            out string? fPre, out string? fLeft, out string? fMid, out string? fRight, out string? fPost,
+                            out string? rPre, out string? rLeft, out string? rMid, out string? rRight, out string? rPost);
 
                         ViewTitleResults.Add(new ViewTitleNameReplaceRow
                         {
@@ -435,8 +435,8 @@ namespace QPK_Keynote_Manager
                     {
                         BuildWordAwareContextStrings(
                             effectiveTitle, search, replace, IsCaseSensitive,
-                            out var fPre, out var fLeft, out var fMid, out var fRight, out var fPost,
-                            out var rPre, out var rLeft, out var rMid, out var rRight, out var rPost);
+                            out string? fPre, out string? fLeft, out string? fMid, out string? fRight, out string? fPost,
+                            out string? rPre, out string? rLeft, out string? rMid, out string? rRight, out string? rPost);
 
                         ViewTitleResults.Add(new ViewTitleNameReplaceRow
                         {
@@ -478,7 +478,7 @@ namespace QPK_Keynote_Manager
         {
             if (view == null) return string.Empty;
 
-            var p = view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
+            Parameter p = view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
             if (p == null) return string.Empty;
 
             try { return p.AsString() ?? string.Empty; }
@@ -494,12 +494,12 @@ namespace QPK_Keynote_Manager
             string search,
             string replace,
             bool caseSensitive,
-            out string foundPrefix,
-            out string foundWord,
-            out string foundSuffix,
-            out string replPrefix,
-            out string replWord,
-            out string replSuffix)
+            out string? foundPrefix,
+            out string? foundWord,
+            out string? foundSuffix,
+            out string? replPrefix,
+            out string? replWord,
+            out string? replSuffix)
         {
             foundPrefix = foundWord = foundSuffix = string.Empty;
             replPrefix = replWord = replSuffix = string.Empty;
@@ -507,7 +507,7 @@ namespace QPK_Keynote_Manager
             if (string.IsNullOrEmpty(fullOld) || string.IsNullOrEmpty(search))
                 return;
 
-            var cmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            StringComparison cmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
             int idx = fullOld.IndexOf(search, cmp);
             if (idx < 0)
@@ -529,20 +529,18 @@ namespace QPK_Keynote_Manager
 
 
 
-        private static bool IsWordChar(char c)
-        {
+        private static bool IsWordChar(char c) =>
             // Treat letters/digits/_ as word characters
             // (This works great for LIGHTING, DOORS, etc.)
-            return char.IsLetterOrDigit(c) || c == '_';
-        }
+            char.IsLetterOrDigit(c) || c == '_';
 
         private void BuildWordAwareContextStrings(
-            string original,
+            string? original,
             string search,
             string replace,
             bool caseSensitive,
-            out string fPre, out string fLeft, out string fMid, out string fRight, out string fPost,
-            out string rPre, out string rLeft, out string rMid, out string rRight, out string rPost)
+            out string? fPre, out string? fLeft, out string? fMid, out string? fRight, out string? fPost,
+            out string? rPre, out string? rLeft, out string? rMid, out string? rRight, out string? rPost)
         {
             fPre = original ?? "";
             fLeft = fMid = fRight = fPost = "";
@@ -553,7 +551,7 @@ namespace QPK_Keynote_Manager
             if (string.IsNullOrEmpty(original) || string.IsNullOrEmpty(search))
                 return;
 
-            var comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            StringComparison comparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
             int idx = original.IndexOf(search, comparison);
             if (idx < 0)
@@ -636,10 +634,10 @@ namespace QPK_Keynote_Manager
         {
             try
             {
-                var def = vs.Definition;
+                ScheduleDefinition def = vs.Definition;
                 for (int i = 0; i < def.GetFieldCount(); i++)
                 {
-                    var f = def.GetField(i);
+                    ScheduleField f = def.GetField(i);
                     string name = f.GetName();
                     if (!string.IsNullOrEmpty(name) &&
                         (name.Equals("Comment", StringComparison.OrdinalIgnoreCase) ||
@@ -686,11 +684,11 @@ namespace QPK_Keynote_Manager
             if (ownerViewId == null || ownerViewId == ElementId.InvalidElementId)
                 return "Not on a Sheet";
 
-            var ownerView = _doc.GetElement(ownerViewId) as View;
+            View? ownerView = _doc.GetElement(ownerViewId) as View;
             if (ownerView == null)
                 return "Not on a Sheet";
 
-            var viewport = new FilteredElementCollector(_doc)
+            Viewport viewport = new FilteredElementCollector(_doc)
                 .OfClass(typeof(Viewport))
                 .Cast<Viewport>()
                 .FirstOrDefault(vp => vp.ViewId == ownerView.Id);
@@ -698,7 +696,7 @@ namespace QPK_Keynote_Manager
             if (viewport == null)
                 return "Not on a Sheet";
 
-            var sheet = _doc.GetElement(viewport.SheetId) as ViewSheet;
+            ViewSheet? sheet = _doc.GetElement(viewport.SheetId) as ViewSheet;
             if (sheet == null)
                 return "Not on a Sheet";
 
@@ -709,14 +707,14 @@ namespace QPK_Keynote_Manager
         {
             try
             {
-                var vp = new FilteredElementCollector(_doc)
+                Viewport vp = new FilteredElementCollector(_doc)
                     .OfClass(typeof(Viewport))
                     .Cast<Viewport>()
                     .FirstOrDefault(x => x.ViewId == vs.Id);
 
                 if (vp == null) return string.Empty;
 
-                var sheet = _doc.GetElement(vp.SheetId) as ViewSheet;
+                ViewSheet? sheet = _doc.GetElement(vp.SheetId) as ViewSheet;
                 if (sheet == null) return string.Empty;
 
                 return $"{sheet.SheetNumber} - {sheet.Name}";
@@ -736,12 +734,12 @@ namespace QPK_Keynote_Manager
             string search,
             string replace,
             bool caseSensitive,
-            out string foundPrefix,
-            out string foundWord,
-            out string foundSuffix,
-            out string replPrefix,
-            out string replWord,
-            out string replSuffix)
+            out string? foundPrefix,
+            out string? foundWord,
+            out string? foundSuffix,
+            out string? replPrefix,
+            out string? replWord,
+            out string? replSuffix)
         {
             foundPrefix = foundWord = foundSuffix = string.Empty;
             replPrefix = replWord = replSuffix = string.Empty;
@@ -749,13 +747,13 @@ namespace QPK_Keynote_Manager
             if (string.IsNullOrWhiteSpace(fullOld) || string.IsNullOrEmpty(search))
                 return;
 
-            var tokens = fullOld
+            string[] tokens = fullOld
                 .Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
                 .ToArray();
 
             if (tokens.Length == 0) return;
 
-            var cmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
+            StringComparison cmp = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
             int hitIndex = -1;
             for (int i = 0; i < tokens.Length; i++)
@@ -780,8 +778,8 @@ namespace QPK_Keynote_Manager
             int start = Math.Max(hitIndex - 2, 0);
             int end = Math.Min(hitIndex + 2, tokens.Length - 1);
 
-            var beforeTokens = tokens.Skip(start).Take(hitIndex - start).ToArray();
-            var afterTokens = tokens.Skip(hitIndex + 1).Take(end - hitIndex).ToArray();
+            string[] beforeTokens = tokens.Skip(start).Take(hitIndex - start).ToArray();
+            string[] afterTokens = tokens.Skip(hitIndex + 1).Take(end - hitIndex).ToArray();
 
             foundPrefix = beforeTokens.Length > 0 ? string.Join(" ", beforeTokens) + " " : string.Empty;
             foundWord = tokens[hitIndex];
@@ -801,7 +799,7 @@ namespace QPK_Keynote_Manager
             int idx = input.IndexOf(oldValue, StringComparison.OrdinalIgnoreCase);
             if (idx < 0) return input;
 
-            var sb = new System.Text.StringBuilder();
+            StringBuilder sb = new System.Text.StringBuilder();
             int start = 0;
             while (idx >= 0)
             {
@@ -814,10 +812,15 @@ namespace QPK_Keynote_Manager
             return sb.ToString();
         }
 
-        public void PreviewEnabledScopes()
+        public IEnumerable<FindReplaceScope> GetAvailableScopes()
+        {
+            return AvailableScopes;
+        }
+
+        public void PreviewEnabledScopes(IEnumerable<FindReplaceScope> availableScopes)
         {
             // Remember what the user is currently viewing in the dropdown
-            var keepSelected = SelectedScope?.Kind;
+            FindReplaceScopeKind? keepSelected = SelectedScope?.Kind;
 
             // Run scans based on checkboxes
             if (IsKeynotesEnabled)
@@ -831,14 +834,14 @@ namespace QPK_Keynote_Manager
 
             // Restore whatever the user was viewing
             if (keepSelected != null)
-                SelectedScope = AvailableScopes.FirstOrDefault(s => s.Kind == keepSelected) ?? SelectedScope;
+                SelectedScope = availableScopes.FirstOrDefault(s => s.Kind == keepSelected) ?? SelectedScope;
 
             // Finally, refresh the grid for the dropdown-selected scope
             UpdateCurrentResults();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
-        private void OnPropertyChanged([CallerMemberName] string name = null)
+        private void OnPropertyChanged([CallerMemberName] string? name = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

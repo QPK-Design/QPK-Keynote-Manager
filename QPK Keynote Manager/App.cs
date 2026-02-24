@@ -27,8 +27,8 @@ namespace QPK_Keynote_Manager
                 }
 
                 // Find or create the panel
-                RibbonPanel panel = null;
-                foreach (var rp in a.GetRibbonPanels(tabName))
+                RibbonPanel? panel = null;
+                foreach (RibbonPanel? rp in a.GetRibbonPanels(tabName))
                 {
                     if (rp.Name == panelName)
                     {
@@ -70,10 +70,7 @@ namespace QPK_Keynote_Manager
             }
         }
 
-        public Result OnShutdown(UIControlledApplication a)
-        {
-            return Result.Succeeded;
-        }
+        public Result OnShutdown(UIControlledApplication a) => Result.Succeeded;
 
         private BitmapImage LoadPng(string path)
         {

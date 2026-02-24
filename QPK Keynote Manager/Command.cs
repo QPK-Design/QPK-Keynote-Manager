@@ -15,7 +15,7 @@ namespace QPK_Keynote_Manager
     public class ShowMainWindowCommand : IExternalCommand
     {
         // Keep a static reference so we don't open multiple windows.
-        private static MainWindow _mainWindow;
+        private static MainWindow? _mainWindow;
 
         public Result Execute(
             ExternalCommandData commandData,

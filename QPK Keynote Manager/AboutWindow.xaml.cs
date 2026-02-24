@@ -28,10 +28,7 @@ namespace QPK_Keynote_Manager
             DataContext = this;
         }
 
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-            Close();
-        }
+        private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
         private void Hyperlink_RequestNavigate(object sender, RequestNavigateEventArgs e)
         {

@@ -16,8 +16,8 @@ namespace QPK_Keynote_Manager
 
         public void Execute(UIApplication app)
         {
-            var uidoc = app?.ActiveUIDocument;
-            var doc = uidoc?.Document;
+            UIDocument? uidoc = app?.ActiveUIDocument;
+            Document? doc = uidoc?.Document;
 
             if (doc == null)
             {
@@ -25,14 +25,14 @@ namespace QPK_Keynote_Manager
                 return;
             }
 
-            var vm = _window.VM;
+            MainViewModel vm = _window.VM;
             if (vm?.SelectedScope == null)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Select a scope first.");
                 return;
             }
 
-            var selected = _window.GetSelectedRow();
+            IReplaceRow? selected = _window.GetSelectedRow();
             if (selected == null)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Select a row first.");
@@ -88,7 +88,7 @@ namespace QPK_Keynote_Manager
                 return;
             }
 
-            var view = doc.GetElement(row.ViewId) as View;
+            View? view = doc.GetElement(row.ViewId) as View;
             if (view == null)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Could not find the view for the selected row.");
@@ -102,7 +102,7 @@ namespace QPK_Keynote_Manager
                 return;
             }
 
-            using (var tx = new Transaction(doc, "QPK Find & Replace — View Title/Name (Selected)"))
+            using (Transaction tx = new Transaction(doc, "QPK Find & Replace — View Title/Name (Selected)"))
             {
                 tx.Start();
 
@@ -110,7 +110,7 @@ namespace QPK_Keynote_Manager
 
                 if (string.Equals(row.Mode, "VT", StringComparison.OrdinalIgnoreCase))
                 {
-                    var p = view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
+                    Parameter p = view.get_Parameter(BuiltInParameter.VIEW_DESCRIPTION);
                     if (p != null && !p.IsReadOnly)
                         ok = p.Set(proposed);
                 }
@@ -126,7 +126,7 @@ namespace QPK_Keynote_Manager
                     tx.Commit();
 
                     // Mark ALL matching rows (same view + same mode) as applied
-                    foreach (var r in vm.ViewTitleResults)
+                    foreach (ViewTitleNameReplaceRow r in vm.ViewTitleResults)
                     {
                         if (r.ViewId == row.ViewId &&
                             string.Equals(r.Mode, row.Mode, StringComparison.OrdinalIgnoreCase))
@@ -154,7 +154,7 @@ namespace QPK_Keynote_Manager
             if (string.IsNullOrWhiteSpace(proposed)) return false;
 
             // Collect existing view names
-            var taken = new HashSet<string>(
+            HashSet<string> taken = new HashSet<string>(
                 new FilteredElementCollector(doc)
                     .OfClass(typeof(View))
                     .Cast<View>()
@@ -213,28 +213,28 @@ namespace QPK_Keynote_Manager
                 return;
             }
 
-            var sheet = doc.GetElement(row.SheetId) as ViewSheet;
+            ViewSheet? sheet = doc.GetElement(row.SheetId) as ViewSheet;
             if (sheet == null)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Could not find the sheet element for the selected row.");
                 return;
             }
 
-            var p = sheet.get_Parameter(BuiltInParameter.SHEET_NAME);
+            Parameter p = sheet.get_Parameter(BuiltInParameter.SHEET_NAME);
             if (p == null || p.IsReadOnly)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Sheet Name parameter is missing or read-only.");
                 return;
             }
 
-            var newName = row.ReplacedText?.Trim() ?? string.Empty;
+            string newName = row.ReplacedText?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(newName))
             {
                 TaskDialog.Show("QPK Keynote Manager", "Proposed sheet name is empty. Skipping.");
                 return;
             }
 
-            using (var tx = new Transaction(doc, "QPK Find & Replace — Sheet Name (Selected)"))
+            using (Transaction tx = new Transaction(doc, "QPK Find & Replace — Sheet Name (Selected)"))
             {
                 tx.Start();
                 bool ok = p.Set(newName);
@@ -274,7 +274,7 @@ namespace QPK_Keynote_Manager
                 return;
             }
 
-            var tElem = doc.GetElement(row.TypeId);
+            Element tElem = doc.GetElement(row.TypeId);
             if (tElem == null)
             {
                 TaskDialog.Show("QPK Keynote Manager", "Could not find the Type element for the selected row.");
@@ -290,7 +290,7 @@ namespace QPK_Keynote_Manager
 
             bool isCaseSensitive = _window?.VM?.IsCaseSensitive ?? false;
 
-            using (var tx = new Transaction(doc, "Replace Type Comment (Selected)"))
+            using (Transaction tx = new Transaction(doc, "Replace Type Comment (Selected)"))
             {
                 tx.Start();
 
@@ -317,12 +317,12 @@ namespace QPK_Keynote_Manager
         }
 
 
-        private static Parameter TryGetTypeCommentsParam(Element typeElem)
+        private static Parameter? TryGetTypeCommentsParam(Element typeElem)
         {
             if (typeElem == null) return null;
 
             // Best: BuiltInParameter
-            var p = typeElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
+            Parameter p = typeElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
             if (p != null) return p;
 
             // Fallbacks (in case of custom/shared params)
@@ -333,9 +333,6 @@ namespace QPK_Keynote_Manager
             return p;
         }
 
-        public string GetName()
-        {
-            return "QPK Keynote Manager - Replace Selected Handler";
-        }
+        public string GetName() => "QPK Keynote Manager - Replace Selected Handler";
     }
 }
