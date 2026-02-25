@@ -267,7 +267,7 @@ namespace QPK_Keynote_Manager
             int s = VM.SheetNameResults?.Count ?? 0;
             int v = VM.ViewTitleResults?.Count ?? 0;
 
-            TaskDialog.Show("QPK Keynote Manager",
+            TaskDialog.Show("QPK Find Replace Manager",
                 $"Preview complete.\n\n" +
                 $"Keynotes: {k}\n" +
                 $"Sheet Names: {s}\n" +

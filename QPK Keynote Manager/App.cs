@@ -47,7 +47,7 @@ namespace QPK_Keynote_Manager
 
                 PushButtonData buttonData = new PushButtonData(
                     "QPK_MainWindow",
-                    "QPK Keynote Manager",
+                    "QPK Find/Replace Manager",
                     assemblyPath,
                     "QPK_Keynote_Manager.ShowMainWindowCommand"
                 );
@@ -65,7 +65,7 @@ namespace QPK_Keynote_Manager
             }
             catch (Exception ex)
             {
-                TaskDialog.Show("QPK Keynote Manager - Startup Error", ex.ToString());
+                TaskDialog.Show("QPK Find/Replace - Startup Error", ex.ToString());
                 return Result.Failed;
             }
         }
