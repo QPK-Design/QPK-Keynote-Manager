@@ -17,7 +17,7 @@ namespace QPK_Keynote_Manager
 
             // Use build date / today's date — simplest “current release date” behavior
             ReleaseDate = DateTime.Today.ToString("yyyy-MM-dd");
-
+            
             Description =
                 "QPK Find/Replace Manager provides a fast, find/replace workflow " +
                 "for Revit keynotes, sheet names, and view titles/names, with preview, " +
