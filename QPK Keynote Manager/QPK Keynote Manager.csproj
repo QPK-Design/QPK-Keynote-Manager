@@ -1,43 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
-    <RootNamespace>QPK_Keynote_Manager</RootNamespace>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <UseWPF>true</UseWPF>
-    <Configurations>Debug;Release;x86</Configurations>
-    <Platforms>AnyCPU;x64;x86</Platforms>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net8.0-windows</TargetFramework>
+		<RootNamespace>QPK_Keynote_Manager</RootNamespace>
+		<AssemblyName>QPKFindReplace</AssemblyName>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<UseWPF>true</UseWPF>
+		<DefineConstants>REVIT2025</DefineConstants>
+		<Configurations>Debug;Release;x86</Configurations>
+		<Platforms>AnyCPU;x64;x86</Platforms>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Resources\QPKKNM_16.png" />
-    <None Remove="Resources\QPKKNM_32.png" />
-    <None Remove="Resources\QPKKNM_64.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<Reference Include="RevitAPI">
+			<HintPath>..\..\..\..\..\..\Program Files\Autodesk\Revit 2025\RevitAPI.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="RevitAPIUI">
+			<HintPath>..\..\..\..\..\..\Program Files\Autodesk\Revit 2025\RevitAPIUI.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+	</ItemGroup>
 
-  <ItemGroup>
-    <Content Include="Resources\QPKKNM_16.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\QPKKNM_32.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Resources\QPKKNM_64.png">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="RevitAPI">
-      <HintPath>..\..\..\..\..\..\Program Files\Autodesk\Revit 2025\RevitAPI.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="RevitAPIUI">
-      <HintPath>..\..\..\..\..\..\Program Files\Autodesk\Revit 2025\RevitAPIUI.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
+	<Import Project="..\QPKFindReplaceShared\QPKFindReplaceShared.projitems" Label="Shared" />
 
 </Project>

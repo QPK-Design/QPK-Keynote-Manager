@@ -1,0 +1,59 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <MSBuildAllProjects Condition="'$(MSBuildVersion)' == '' Or '$(MSBuildVersion)' &lt; '16.0'">$(MSBuildAllProjects);$(MSBuildThisFileFullPath)</MSBuildAllProjects>
+    <HasSharedItems>true</HasSharedItems>
+    <SharedGUID>a8820c7e-1186-4be6-a131-26f4949900cc</SharedGUID>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration">
+    <Import_RootNamespace>QPKFindReplaceShared</Import_RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)AboutWindow.xaml.cs">
+      <SubType>Code</SubType>
+      <DependentUpon>AboutWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)AssemblyInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)BindingProxy.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)FindReplaceScope.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)IReplaceRow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MainViewModel.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)ReplaceAllHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReplaceResult.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ReplaceSelectedHandler.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ScopeKindToVisibilityConverter.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)SheetNameReplaceRow.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)ViewTitleNameReplaceRow.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="$(MSBuildThisFileDirectory)AboutWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="$(MSBuildThisFileDirectory)MainWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)Resources\QPKKNM_16.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)Resources\QPKKNM_32.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(MSBuildThisFileDirectory)Resources\QPKKNM_64.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)Deployables\DLL and Other Files\QPK Keynote Manager.deps.json" />
+    <None Include="$(MSBuildThisFileDirectory)Deployables\DLL and Other Files\QPK Keynote Manager.dll" />
+    <None Include="$(MSBuildThisFileDirectory)Deployables\DLL and Other Files\QPK Keynote Manager.pdb" />
+    <None Include="$(MSBuildThisFileDirectory)Deployables\DLL and Other Files\Resources\QPKKNM_16.png" />
+    <None Include="$(MSBuildThisFileDirectory)Deployables\DLL and Other Files\Resources\QPKKNM_32.png" />
+    <None Include="$(MSBuildThisFileDirectory)Deployables\DLL and Other Files\Resources\QPKKNM_64.png" />
+    <None Include="$(MSBuildThisFileDirectory)Deployables\QPK_Keynote_Manager.addin" />
+  </ItemGroup>
+</Project>
