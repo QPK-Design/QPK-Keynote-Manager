@@ -5,6 +5,10 @@ VisualStudioVersion = 17.14.36616.10
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QPK Keynote Manager", "QPK Keynote Manager\QPK Keynote Manager.csproj", "{94D2A368-1481-4E7A-BE3D-4B477A1155F4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QPKFindReplace2024", "QPKFindReplace2024\QPKFindReplace2024.csproj", "{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "QPKFindReplaceShared", "QPKFindReplaceShared\QPKFindReplaceShared.shproj", "{A8820C7E-1186-4BE6-A131-26F4949900CC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,11 +40,33 @@ Global
 		{94D2A368-1481-4E7A-BE3D-4B477A1155F4}.x86|x64.Build.0 = Debug|x64
 		{94D2A368-1481-4E7A-BE3D-4B477A1155F4}.x86|x86.ActiveCfg = Debug|x64
 		{94D2A368-1481-4E7A-BE3D-4B477A1155F4}.x86|x86.Build.0 = Debug|x64
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Debug|x64.Build.0 = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Debug|x86.Build.0 = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Release|x64.ActiveCfg = Release|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Release|x64.Build.0 = Release|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Release|x86.ActiveCfg = Release|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.Release|x86.Build.0 = Release|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.x86|Any CPU.ActiveCfg = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.x86|Any CPU.Build.0 = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.x86|x64.ActiveCfg = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.x86|x64.Build.0 = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.x86|x86.ActiveCfg = Debug|Any CPU
+		{1602F56E-F8DA-46DB-A80E-BD3AC7E64301}.x86|x86.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {EED788B4-6911-40BE-BBEB-39C3273F67E0}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		QPKFindReplaceShared\QPKFindReplaceShared.projitems*{1602f56e-f8da-46db-a80e-bd3ac7e64301}*SharedItemsImports = 5
+		QPKFindReplaceShared\QPKFindReplaceShared.projitems*{a8820c7e-1186-4be6-a131-26f4949900cc}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal
