@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using System.Linq;
 
 namespace QPK_Keynote_Manager
 {
@@ -60,7 +61,12 @@ namespace QPK_Keynote_Manager
         {
             if (tElem == null) return false;
 
-            newText ??= string.Empty;
+        #if REVIT2025
+                    newText ??= string.Empty;
+        #else
+            if (newText == null)
+                newText = string.Empty;
+        #endif
 
             // 1) Built-in Type Comments
             Parameter p = tElem.get_Parameter(BuiltInParameter.ALL_MODEL_TYPE_COMMENTS);
